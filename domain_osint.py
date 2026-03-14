@@ -1,24 +1,21 @@
 # domain_osint.py
-# وحدة استخبارات الدومين (OSINT)
-
 import dns.resolver
 import requests
-import socket
 
 def whois_lookup(domain):
-    """جلب معلومات WHOIS عن الدومين"""
+    """جلب بيانات WHOIS حقيقية عبر RDAP"""
     try:
         r = requests.get(f"https://rdap.org/domain/{domain}", timeout=5)
         if r.status_code == 200:
             return r.json()
-        return {"خطأ": "لا توجد معلومات WHOIS"}
+        return {"خطأ": "لا توجد بيانات WHOIS"}
     except Exception as e:
         return {"خطأ": str(e)}
 
 def dns_lookup(domain):
-    """جلب سجلات DNS الأساسية"""
+    """جلب سجلات DNS حقيقية"""
     records = {}
-    for rtype in ["A","AAAA","MX","TXT","NS"]:
+    for rtype in ["A", "AAAA", "MX", "TXT", "NS"]:
         try:
             ans = dns.resolver.resolve(domain, rtype, lifetime=2)
             records[rtype] = [str(x) for x in ans]
@@ -27,8 +24,8 @@ def dns_lookup(domain):
     return records
 
 def subdomain_scan(domain):
-    """فحص الدومينات الفرعية الأساسية"""
-    subs = ["www","mail","dev","test","portal","admin","api","beta"]
+    """مسح النطاقات الفرعية البسيط"""
+    subs = ["www", "mail", "dev", "test", "portal", "admin", "api", "beta"]
     found = {}
     for s in subs:
         host = f"{s}.{domain}"
