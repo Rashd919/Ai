@@ -1,48 +1,44 @@
 # website_scan.py
-# وحدة فحص المواقع واستخراج المعلومات التقنية
-
 import requests
-import re
 from bs4 import BeautifulSoup
 
 def detect_tech(url):
-    """كشف التقنيات المستخدمة في الموقع"""
+    """كشف تقنيات الموقع"""
     tech = []
     try:
         r = requests.get(url, timeout=5)
-        headers, txt = r.headers, r.text.lower()
-        if "x-powered-by" in headers:
-            tech.append(headers["x-powered-by"])
-        if "x-generator" in headers:
-            tech.append(headers["x-generator"])
-        if "wordpress" in txt:
+        headers = r.headers
+        if "X-Powered-By" in headers:
+            tech.append(headers["X-Powered-By"])
+        if "Server" in headers:
+            tech.append(headers["Server"])
+        html = r.text.lower()
+        if "wp-content" in html:
             tech.append("WordPress")
-        if "django" in txt:
+        if "django" in html:
             tech.append("Django")
-        if "react" in txt or "next.js" in txt:
-            tech.append("React/Next")
-        if "jquery" in txt:
-            tech.append("jQuery")
+        return tech
     except:
-        pass
-    return list(set(tech))
+        return []
 
 def header_analysis(url):
-    """تحليل الهيدرز الأساسية للموقع"""
+    """تحليل الهيدرز"""
     try:
         r = requests.get(url, timeout=5)
-        headers = r.headers
-        needed = ["Content-Security-Policy","X-Frame-Options","X-Content-Type-Options",
-                  "Strict-Transport-Security","Referrer-Policy","Permissions-Policy"]
-        return {k: headers.get(k, "غير موجود") for k in needed}
-    except Exception as e:
-        return {"خطأ": str(e)}
+        return dict(r.headers)
+    except:
+        return {}
 
 def extract_emails(url):
-    """استخراج البريد الإلكتروني من صفحات الموقع"""
+    """استخراج الإيميلات من الموقع"""
+    emails = set()
     try:
         r = requests.get(url, timeout=5)
-        emails = re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", r.text)
-        return list(set(emails))
-    except Exception as e:
-        return {"خطأ": str(e)}
+        soup = BeautifulSoup(r.text, "html.parser")
+        text = soup.get_text()
+        import re
+        for e in re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}", text):
+            emails.add(e)
+        return list(emails)
+    except:
+        return []
