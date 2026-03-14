@@ -1,6 +1,12 @@
 import streamlit as st
-from modules import domain_osint, website_scan, username_osint, geoip_osint, attack_surface, ai_analysis, report_generator
-from modules.ai_hacking import ai_hacking   # <-- استيراد AI Hacking Assistant
+import domain_osint
+import website_scan
+import username_osint
+import geoip_osint
+import attack_surface
+import ai_analysis
+import report_generator
+from ai_hacking import ai_hacking   # <-- استيراد AI Hacking Assistant
 
 st.set_page_config(page_title="CyberShield Pro OSINT", layout="wide")
 st.title("🛡 CyberShield Pro OSINT Intelligence Platform")
