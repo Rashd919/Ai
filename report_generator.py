@@ -1,39 +1,31 @@
+# report_generator.py
+# توليد تقرير PDF كامل من نتائج الفحص
+
 from fpdf import FPDF
 from datetime import datetime
-import tempfile
 
-class PDFReportGenerator:
-    def __init__(self):
-        self.font_path = "DejaVuSans.ttf"  # ضع الخط في نفس مجلد المشروع أو مسار صحيح
+def create_report(session_state):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "تقرير OSINT وفحص الأمان", ln=True, align="C")
+    pdf.ln(10)
+    pdf.set_font("Arial", "", 12)
 
-    def create_report(self, session_data):
-        """
-        إنشاء تقرير PDF كامل من بيانات session_state
-        """
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.add_font('DejaVu', '', self.font_path, uni=True)
-        pdf.set_font("DejaVu", '', 16)
-        pdf.set_text_color(200,0,0)
-        pdf.cell(0, 10, "CyberShield Pro OSINT Report", ln=True, align="C")
+    for key, value in session_state.items():
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 8, str(key), ln=True)
+        pdf.set_font("Arial", "", 11)
+        if isinstance(value, dict):
+            for k, v in value.items():
+                pdf.cell(0, 7, f"- {k}: {v}", ln=True)
+        elif isinstance(value, list):
+            for item in value:
+                pdf.cell(0, 7, f"- {item}", ln=True)
+        else:
+            pdf.cell(0, 7, str(value), ln=True)
+        pdf.ln(3)
 
-        pdf.set_font("DejaVu", '', 12)
-        pdf.set_text_color(0,0,0)
-        date = datetime.now().strftime("%Y-%m-%d %H:%M")
-        pdf.cell(0, 10, f"Report Date: {date}", ln=True)
-
-        pdf.ln(5)
-        pdf.set_font("DejaVu", '', 14)
-        pdf.cell(0, 10, "Session Data Overview:", ln=True)
-
-        pdf.set_font("DejaVu", '', 11)
-        for key, value in session_data.items():
-            pdf.multi_cell(0, 8, f"{key}: {value}")
-            pdf.ln(2)
-
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-        pdf.output(temp_file.name)
-        return temp_file.name
-
-# لتسهيل الاستخدام:
-report_generator = PDFReportGenerator()
+    filename = f"OSINT_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    pdf.output(f"/tmp/{filename}")
+    return f"/tmp/{filename}"
