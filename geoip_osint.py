@@ -1,23 +1,23 @@
 # geoip_osint.py
-# وحدة تحليل الـ IP والموقع الجغرافي
-
 import requests
 
 def geoip(ip):
-    """جلب معلومات الموقع الجغرافي عن IP"""
+    """تحديد الموقع الجغرافي لعنوان IP"""
     try:
-        r = requests.get(f"http://ip-api.com/json/{ip}?lang=ar", timeout=5)
+        r = requests.get(f"https://ipapi.co/{ip}/json/", timeout=5)
         if r.status_code == 200:
             data = r.json()
-            if data.get("status") == "success":
-                return {
-                    "IP": ip,
-                    "الدولة": data.get("country"),
-                    "المدينة": data.get("city"),
-                    "المزود": data.get("isp"),
-                    "الخطوط الطول والعرض": f"{data.get('lat')}, {data.get('lon')}"
-                }
-            else:
-                return {"خطأ": "تعذر تحديد الموقع"}
+            result = {
+                "IP": data.get("ip"),
+                "الدولة": data.get("country_name"),
+                "المدينة": data.get("city"),
+                "المنطقة/المقاطعة": data.get("region"),
+                "الرمز البريدي": data.get("postal"),
+                "خط الطول": data.get("latitude"),
+                "خط العرض": data.get("longitude"),
+                "مزود الخدمة": data.get("org")
+            }
+            return result
+        return {"خطأ": "تعذر الحصول على بيانات الموقع"}
     except Exception as e:
         return {"خطأ": str(e)}
