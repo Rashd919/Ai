@@ -1,30 +1,18 @@
+# attack_surface.py
+# رسم خريطة سطح الهجوم للدومينات الفرعية
+
 import networkx as nx
 import matplotlib.pyplot as plt
-import tempfile
 
 def draw_graph(domain, subdomains):
-    """
-    رسم خريطة الهجوم (Attack Surface) باستخدام NetworkX
-    """
+    """إنشاء خريطة بصريّة لسطح الهجوم"""
     G = nx.Graph()
     G.add_node(domain)
-
-    for sd, ip in subdomains.items():
-        G.add_node(sd)
-        G.add_edge(domain, sd)
-
+    for sub, ip in subdomains.items():
+        G.add_edge(domain, sub)
     plt.figure(figsize=(8,6))
-    nx.draw_circular(
-        G, 
-        with_labels=True, 
-        node_color="#FF0000", 
-        node_size=1200, 
-        font_size=10,
-        font_color="white",
-        edge_color="#00FF00"
-    )
-
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-    plt.savefig(temp_file.name, bbox_inches='tight')
+    nx.draw_circular(G, with_labels=True, node_color="#FF0000", node_size=1000, font_size=10)
+    path = f"/tmp/{domain}_map.png"
+    plt.savefig(path)
     plt.close()
-    return temp_file.name
+    return path
