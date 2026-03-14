@@ -1,25 +1,23 @@
-import requests
-import socket
+# domain_osint.py
+# وحدة تحليل الدومين والمعلومات الأساسية
+
 import dns.resolver
+import requests
 
 def whois_lookup(domain):
-    """Simple WHOIS lookup via RDAP"""
+    """الحصول على معلومات WHOIS للدومين"""
     try:
         r = requests.get(f"https://rdap.org/domain/{domain}", timeout=5)
         if r.status_code == 200:
-            d = r.json()
-            return {
-                "domain": d.get("ldhName"),
-                "status": d.get("status"),
-                "events": d.get("events")
-            }
+            return r.json()
+        return {"خطأ": "لم يتم العثور على معلومات WHOIS"}
     except Exception as e:
-        return {"error": str(e)}
-    return {}
+        return {"خطأ": str(e)}
 
 def dns_lookup(domain):
+    """الحصول على سجلات DNS الأساسية"""
     records = {}
-    for rtype in ["A", "AAAA", "MX", "TXT", "NS"]:
+    for rtype in ["A","AAAA","MX","TXT","NS"]:
         try:
             ans = dns.resolver.resolve(domain, rtype, lifetime=2)
             records[rtype] = [str(x) for x in ans]
@@ -28,13 +26,13 @@ def dns_lookup(domain):
     return records
 
 def subdomain_scan(domain):
-    """Simple subdomain brute-force"""
-    subs = ["www", "mail", "dev", "test", "portal", "admin", "api", "beta", "stage", "m"]
+    """فحص الدومينات الفرعية البسيط"""
+    subs = ["www","mail","dev","test","portal","admin","api","beta"]
     found = {}
     for s in subs:
         host = f"{s}.{domain}"
         try:
-            ip = socket.gethostbyname(host)
+            ip = dns.resolver.resolve(host, "A")[0].to_text()
             found[host] = ip
         except:
             continue
