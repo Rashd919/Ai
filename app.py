@@ -1,5 +1,6 @@
 import streamlit as st
 from modules import domain_osint, website_scan, username_osint, geoip_osint, attack_surface, ai_analysis, report_generator
+from modules.ai_hacking import ai_hacking   # <-- استيراد AI Hacking Assistant
 
 st.set_page_config(page_title="CyberShield Pro OSINT", layout="wide")
 st.title("🛡 CyberShield Pro OSINT Intelligence Platform")
@@ -12,7 +13,8 @@ tabs = st.tabs([
     "GeoIP",
     "Attack Surface",
     "AI Analysis",
-    "Reports"
+    "Reports",
+    "🤖 AI Hacking Assistant"   # <-- تبويب جديد
 ])
 
 # ----------------------------
@@ -90,3 +92,17 @@ with tabs[6]:
         file = report_generator.create_report(st.session_state)
         with open(file, "rb") as f:
             st.download_button("Download Report", f, file_name=file)
+
+# ----------------------------
+# AI Hacking Assistant
+# ----------------------------
+with tabs[7]:
+    target = st.text_input("🎯 Target Domain or IP for AI Hacking Analysis")
+    open_ports_input = st.text_input("Open Ports (e.g., 22,80,443)")
+    tech_input = st.text_input("Detected Technologies (e.g., WordPress, Django)")
+    
+    if st.button("Analyze Target with AI"):
+        open_ports = [int(p.strip()) for p in open_ports_input.split(",") if p.strip().isdigit()]
+        tech_list = [t.strip() for t in tech_input.split(",") if t.strip()]
+        analysis = ai_hacking.analyze_target(target, open_ports, tech_list, headers=None)
+        st.code(analysis)
