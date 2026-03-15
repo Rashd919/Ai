@@ -1,5 +1,6 @@
 import streamlit as st
 import domain_osint
+import ai_pentest
 import port_scanner
 import network_mapper
 import google_dork
