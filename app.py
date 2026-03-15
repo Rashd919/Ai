@@ -1,5 +1,6 @@
 import streamlit as st
 import domain_osint
+import phone_osint
 import website_scan
 import username_osint
 import geoip_osint
