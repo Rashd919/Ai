@@ -2,6 +2,7 @@ import streamlit as st
 import domain_osint
 import port_scanner
 import google_dork
+import vuln_scanner
 import darkweb_search
 import ai_threat
 import email_osint
