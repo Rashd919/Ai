@@ -1,5 +1,6 @@
 import requests
 import os
+from config import get_key
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -9,7 +10,7 @@ def email_search(email):
     results = {}
 
     # ✅ خذ المفتاح من env أو secrets
-    api_key = os.getenv("TAVILY_API_KEY")
+    api_key = get_key("TAVILY_API_KEY")
 
     if not api_key:
         try:
