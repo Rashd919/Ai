@@ -7,7 +7,7 @@ def analyze_ports(domain, open_ports):
     تحليل المنافذ المفتوحة باستخدام LLM (Groq).
     """
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    model = "llama3-8b-8192" # أو أي نموذج Groq آخر تفضله
+    model = "openai/gpt-oss-120b"
 
     prompt = f"أنت خبير في الأمن السيبراني. قم بتحليل المنافذ المفتوحة التالية للهدف {domain}:\n"
     if open_ports:
