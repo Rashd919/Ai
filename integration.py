@@ -1,7 +1,7 @@
 import os
 import json
 import asyncio
-import telegram
+from telegram import Bot
 from gtts import gTTS
 from supabase import create_client, Client
 from datetime import datetime
@@ -38,7 +38,7 @@ async def send_telegram_msg(text, include_voice=True):
     if not token or not chat_id:
         return "❌ إعدادات تلجرام غير مكتملة."
     
-    bot = telegram.Bot(token=token)
+    bot = Bot(token=token)
     try:
         # إرسال النص
         await bot.send_message(chat_id=chat_id, text=f"📋 **تقرير جديد من Ai Platform:**\n\n{text}")
@@ -59,13 +59,22 @@ async def send_telegram_msg(text, include_voice=True):
 def send_report_to_telegram(text, include_voice=True):
     """دالة وسيطة لتشغيل التلجرام بشكل متزامن"""
     try:
-        return asyncio.run(send_telegram_msg(text, include_voice))
-    except Exception as e:
+        # محاولة الحصول على حلقة الأحداث الحالية
         try:
             loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+        if loop.is_running():
+            # إذا كانت الحلقة تعمل بالفعل (كما في Streamlit)، نستخدم future
+            import nest_asyncio
+            nest_asyncio.apply()
             return loop.run_until_complete(send_telegram_msg(text, include_voice))
-        except:
-            return f"❌ فشل تشغيل التلجرام: {str(e)}"
+        else:
+            return loop.run_until_complete(send_telegram_msg(text, include_voice))
+    except Exception as e:
+        return f"❌ فشل تشغيل التلجرام: {str(e)}"
 
 # --- إعدادات Tavily ---
 def tavily_search(query):

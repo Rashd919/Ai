@@ -16,4 +16,7 @@ Pillow
 validators
 dnspython
 matplotlib
-networkx
+python-telegram-bot
+gTTS
+supabase
+nest-asyncio
