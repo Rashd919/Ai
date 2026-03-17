@@ -1,4 +1,10 @@
 import streamlit as st
+import os
+from dotenv import load_dotenv
+
+# تحميل المتغيرات البيئية في بداية التطبيق
+load_dotenv()
+
 import domain_osint
 import ai_pentest
 import port_scanner
@@ -16,8 +22,8 @@ import attack_surface
 import ai_analysis
 import report_generator
 from ai_hacking import AIHackingAssistant
-
-# --- التبويبات ---
+import integration
+import json--- التبويبات ---
 tabs = st.tabs([
     "تحليل الدومين",
     "فحص المواقع",
@@ -154,8 +160,22 @@ with tabs[8]:
 with tabs[9]:
     email = st.text_input("أدخل البريد الإلكتروني للتحليل", key="email_input")
     if st.button("بحث البريد الإلكتروني", key="email_btn"):
-        res = email_osint.email_search(email)
-        st.write(res)
+        with st.spinner("جاري البحث عن تسريبات البريد..."):
+            res = email_osint.email_search(email)
+            if "error" in res:
+                st.error(res["error"])
+            else:
+                if "Tavily_Analysis" in res:
+                    st.success("تحليل Tavily:")
+                    st.write(res["Tavily_Analysis"])
+                
+                if "Search_Results" in res and res["Search_Results"]:
+                    st.write("---")
+                    st.write("النتائج المكتشفة:")
+                    for r in res["Search_Results"]:
+                        st.markdown(f"**[{r['title']}]({r['url']})**<br>{r['snippet']}", unsafe_allow_html=True)
+                else:
+                    st.info("لم يتم العثور على نتائج بحث إضافية.")
 
 with tabs[10]:
     number = st.text_input("أدخل رقم الهاتف", key="phone_input")
