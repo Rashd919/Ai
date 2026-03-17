@@ -15,3 +15,5 @@ networkx
 Pillow
 validators
 dnspython
+matplotlib
+networkx
