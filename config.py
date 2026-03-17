@@ -1,8 +1,3 @@
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
 def get_key(key):
     value = os.getenv(key)
 
@@ -14,6 +9,6 @@ def get_key(key):
             pass
 
     if not value:
-        raise ValueError(f"{key} not found")
+        raise ValueError(f"❌ API KEY MISSING: {key}")
 
     return value
