@@ -2,11 +2,30 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 
-# تحميل المتغيرات البيئية في بداية التطبيق
+# تحميل .env (لو موجود)
 load_dotenv()
 
-if "TAVILY_API_KEY" in st.secrets:
-    os.environ["TAVILY_API_KEY"] = st.secrets["TAVILY_API_KEY"]
+# ✅ تحميل كل المفاتيح من secrets
+REQUIRED_KEYS = [
+    "TAVILY_API_KEY",
+    "GROQ_API_KEY",
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_CHAT_ID",
+    "SUPABASE_URL",
+    "SUPABASE_KEY"
+]
+
+missing_keys = []
+
+for key in REQUIRED_KEYS:
+    if key in st.secrets:
+        os.environ[key] = st.secrets[key]
+    else:
+        missing_keys.append(key)
+
+# تنبيه إذا في مفاتيح ناقصة
+if missing_keys:
+    st.warning(f"⚠️ المفاتيح الناقصة: {missing_keys}")
 import domain_osint
 import ai_pentest
 import port_scanner
