@@ -12,7 +12,7 @@ def analyze_threat(target):
     except Exception as e:
         return f"❌ مشكلة في API KEY: {str(e)}"
 
-    model = "llama3-8b-8192"
+    model = "openai/gpt-oss-120b"
 
     prompt = f"أنت خبير في تحليل التهديدات الأمنية. قم بتحليل التهديدات المحتملة للهدف: {target}.\n\n"
     prompt += "قدم تقريرًا مفصلاً يتضمن:\n"
