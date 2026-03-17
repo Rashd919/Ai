@@ -8,7 +8,7 @@ class AIHackingAssistant:
     def __init__(self):
         self.name = "CyberShield AI Hacking Assistant"
         self.client = Groq(api_key=get_key("GROQ_API_KEY"))
-        self.model = "llama3-8b-8192" # أو أي نموذج Groq آخر تفضله
+        self.model = "openai/gpt-oss-120b"
 
     def analyze_target(self, domain, open_ports=None, tech=None, headers=None):
         """
