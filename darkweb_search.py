@@ -1,4 +1,5 @@
 import os
+from config import get_key
 from tavily import TavilyClient
 
 def darkweb_lookup(query):
@@ -7,7 +8,7 @@ def darkweb_lookup(query):
     ملاحظة: البحث الفعلي في الشبكة المظلمة يتطلب أدوات متخصصة ولا يمكن الوصول إليه مباشرة عبر واجهات برمجة التطبيقات العامة.
     هذه الوظيفة تحاكي البحث عن معلومات قد تكون موجودة في تقارير أو مقالات تتحدث عن الشبكة المظلمة.
     """
-    tavily_api_key = os.getenv("TAVILY_API_KEY")
+    tavily_api_key = get_key("TAVILY_API_KEY")
     if not tavily_api_key:
         return {"error": "TAVILY_API_KEY غير موجود في متغيرات البيئة"}
 
