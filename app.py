@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from config import get_key
 from dotenv import load_dotenv
 
 # تحميل .env (لو موجود)
