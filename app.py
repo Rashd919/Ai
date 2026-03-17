@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 # تحميل المتغيرات البيئية في بداية التطبيق
 load_dotenv()
 
+if "TAVILY_API_KEY" in st.secrets:
+    os.environ["TAVILY_API_KEY"] = st.secrets["TAVILY_API_KEY"]
 import domain_osint
 import ai_pentest
 import port_scanner
