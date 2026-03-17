@@ -1,66 +1,54 @@
 import random
+import os
+from groq import Groq
+import json
 
 class AIHackingAssistant:
     def __init__(self):
         self.name = "CyberShield AI Hacking Assistant"
+        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        self.model = "llama3-8b-8192" # أو أي نموذج Groq آخر تفضله
 
     def analyze_target(self, domain, open_ports=None, tech=None, headers=None):
         """
-        تحليل كامل للهدف:
+        تحليل كامل للهدف باستخدام LLM (Groq):
         - المنافذ المفتوحة
         - التقنيات المستخدمة
         - الهيدرز الأمنية
         """
-        report = f"🎯 تحليل الهدف: {domain}\n\n"
-
-        # --- المنافذ المفتوحة ---
+        prompt = f"أنت مساعد خبير في الأمن السيبراني. قم بتحليل الهدف التالي: {domain}.\n\n"
         if open_ports:
-            report += "🔌 المنافذ المفتوحة:\n"
-            common_vulns = {
-                21: "FTP Anonymous login possible",
-                22: "SSH weak password possible",
-                23: "Telnet open - vulnerable",
-                80: "HTTP outdated server version",
-                443: "HTTPS certificate issues",
-                3306: "MySQL default credentials possible",
-                3389: "RDP brute force possible"
-            }
-            for port in open_ports:
-                vuln = common_vulns.get(port, "لا توجد ثغرة معروفة لهذا المنفذ")
-                report += f"- المنفذ {port}: {vuln}\n"
-        else:
-            report += "🔌 لا توجد معلومات عن المنافذ المفتوحة.\n"
-
-        # --- التقنيات ---
+            prompt += f"المنافذ المفتوحة: {", ".join(map(str, open_ports))}.\n"
         if tech:
-            report += "\n💻 التقنيات المكتشفة:\n"
-            for t in tech:
-                report += f"- {t}\n"
-        else:
-            report += "\n💻 لم يتم اكتشاف تقنيات.\n"
-
-        # --- الهيدرز الأمنية ---
+            prompt += f"التقنيات المكتشفة: {", ".join(tech)}.\n"
         if headers:
-            report += "\n🛡️ تحليل الهيدرز الأمنية:\n"
-            for k,v in headers.items():
-                report += f"- {k}: {v}\n"
-        else:
-            report += "\n🛡️ لم يتم تحليل الهيدرز.\n"
+            prompt += f"الهيدرز الأمنية: {json.dumps(headers)}.\n"
+        
+        prompt += "\nبناءً على هذه المعلومات، قدم تقريرًا مفصلاً يتضمن:\n"
+        prompt += "1. ملخصًا للوضع الأمني.\n"
+        prompt += "2. الثغرات المحتملة بناءً على المنافذ والتقنيات.\n"
+        prompt += "3. اقتراحات محددة للهجوم (إذا كان الهدف اختبار اختراق) أو للحماية (إذا كان الهدف تحصين)."
+        prompt += "4. درجة خطورة عامة (منخفضة، متوسطة، عالية، حرجة)."
 
-        # --- اقتراحات هجوم/حماية ---
-        suggestions = [
-            "تحقق من كلمات المرور الافتراضية.",
-            "فحص الثغرات باستخدام Nmap أو OpenVAS.",
-            "تحديث السيرفرات والتطبيقات.",
-            "استخدام WAF للحماية من الهجمات.",
-            "تمكين 2FA على الحسابات الحساسة.",
-            "تقييد الوصول عبر IP whitelist."
-        ]
-        report += "\n💡 اقتراحات إضافية:\n"
-        for s in random.sample(suggestions, 3):
-            report += f"- {s}\n"
-
-        return report
+        try:
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "أنت مساعد خبير في الأمن السيبراني."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+                model=self.model,
+                temperature=0.7,
+                max_tokens=1500
+            )
+            return chat_completion.choices[0].message.content
+        except Exception as e:
+            return f"خطأ في تحليل الذكاء الاصطناعي (Groq): {str(e)}"
 
 # تهيئة وحدة الذكاء الاصطناعي الجاهزة للاستخدام
 ai_hacking = AIHackingAssistant()

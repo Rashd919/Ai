@@ -15,7 +15,7 @@ import geoip_osint
 import attack_surface
 import ai_analysis
 import report_generator
-from ai_hacking import ai_hacking
+from ai_hacking import AIHackingAssistant
 
 # --- التبويبات ---
 tabs = st.tabs([
@@ -134,18 +134,22 @@ with tabs[7]:
     if st.button("تحليل الهدف بالذكاء الاصطناعي", key="ai_btn"):
         open_ports = [int(p.strip()) for p in open_ports_input.split(",") if p.strip().isdigit()]
         tech_list = [t.strip() for t in tech_input.split(",") if t.strip()]
-        analysis = ai_hacking.analyze_target(target, open_ports, tech_list, headers=None)
+        ai_hacking_assistant = AIHackingAssistant()
+        analysis = ai_hacking_assistant.analyze_target(target, open_ports, tech_list, headers=None)
         st.code(analysis)
 
 # ----------------------------
 # الأدوات الجديدة
 # ----------------------------
-# كل عنصر text_input و button عنده key فريد
 with tabs[8]:
     query = st.text_input("أدخل نص البحث للـ Google Dork", key="dork_input")
     if st.button("بحث Google Dork", key="dork_btn"):
         results = google_dork.search_dork(query)
-        st.write(results)
+        if isinstance(results, dict) and "error" in results:
+            st.error(results["error"])
+        else:
+            for r in results:
+                st.markdown(f"**[{r['title']}]({r['url']})**<br>{r['snippet']}", unsafe_allow_html=True)
 
 with tabs[9]:
     email = st.text_input("أدخل البريد الإلكتروني للتحليل", key="email_input")
@@ -157,13 +161,25 @@ with tabs[10]:
     number = st.text_input("أدخل رقم الهاتف", key="phone_input")
     if st.button("بحث رقم الهاتف", key="phone_btn"):
         res = phone_osint.phone_lookup(number)
-        st.write(res)
+        if isinstance(res, dict) and "error" in res:
+            st.error(res["error"])
+        elif isinstance(res, dict) and "message" in res:
+            st.info(res["message"])
+        else:
+            for r in res:
+                st.markdown(f"**[{r['title']}]({r['url']})**<br>{r['snippet']}", unsafe_allow_html=True)
 
 with tabs[11]:
     query = st.text_input("أدخل نص البحث في الشبكة المظلمة", key="darkweb_input")
     if st.button("بحث Dark Web", key="darkweb_btn"):
         res = darkweb_search.darkweb_lookup(query)
-        st.write(res)
+        if isinstance(res, dict) and "error" in res:
+            st.error(res["error"])
+        elif isinstance(res, dict) and "message" in res:
+            st.info(res["message"])
+        else:
+            for r in res:
+                st.markdown(f"**[{r['title']}]({r['url']})**<br>{r['snippet']}", unsafe_allow_html=True)
 
 with tabs[12]:
     target_port = st.text_input("أدخل IP أو الدومين للفحص", key="port_input")
@@ -175,7 +191,13 @@ with tabs[13]:
     target_vuln = st.text_input("أدخل IP أو الدومين للفحص", key="vuln_input")
     if st.button("فحص الثغرات", key="vuln_btn"):
         res = vuln_scanner.scan_vulnerabilities(target_vuln)
-        st.write(res)
+        if isinstance(res, dict) and "error" in res:
+            st.error(res["error"])
+        elif isinstance(res, dict) and "message" in res:
+            st.info(res["message"])
+        else:
+            for vuln in res:
+                st.write(f"**{vuln['title']}** - [Link]({vuln['url']})<br>{vuln['snippet']}")
 
 with tabs[14]:
     target_net = st.text_input("أدخل IP أو الدومين لرسم الشبكة", key="net_input")

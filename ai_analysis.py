@@ -1,36 +1,41 @@
 import random
+import os
+from groq import Groq
 
 def analyze_ports(domain, open_ports):
     """
-    تحليل المنافذ المفتوحة باستخدام ذكاء اصطناعي بسيط (محاكاة)
+    تحليل المنافذ المفتوحة باستخدام LLM (Groq).
     """
-    if not open_ports:
-        return f"لا توجد منافذ مفتوحة على {domain}، الهدف يبدو آمن."
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    model = "llama3-8b-8192" # أو أي نموذج Groq آخر تفضله
 
-    potential_vulns = {
-        21: "FTP Anonymous login possible",
-        22: "SSH weak password possible",
-        23: "Telnet open - vulnerable",
-        80: "HTTP outdated server version",
-        443: "HTTPS certificate issues",
-        3306: "MySQL default credentials possible",
-        3389: "RDP brute force possible"
-    }
+    prompt = f"أنت خبير في الأمن السيبراني. قم بتحليل المنافذ المفتوحة التالية للهدف {domain}:\n"
+    if open_ports:
+        prompt += f"المنافذ المفتوحة: {", ".join(map(str, open_ports))}.\n"
+    else:
+        prompt += "لا توجد منافذ مفتوحة.\n"
 
-    analysis = f"تحليل المنافذ المفتوحة على {domain}:\n"
-    for port in open_ports:
-        vuln = potential_vulns.get(port, "لا توجد ثغرة معروفة لهذا المنفذ")
-        analysis += f"- المنفذ {port}: {vuln}\n"
+    prompt += "\nبناءً على هذه المعلومات، قدم تقريرًا مفصلاً يتضمن:\n"
+    prompt += "1. ملخصًا للوضع الأمني المتعلق بالمنافذ.\n"
+    prompt += "2. الثغرات المحتملة المرتبطة بكل منفذ.\n"
+    prompt += "3. اقتراحات محددة لتحصين هذه المنافذ أو استغلالها (إذا كان الهدف اختبار اختراق)."
 
-    # إضافة اقتراحات عشوائية للهجوم
-    suggestions = [
-        "تحقق من كلمات المرور الافتراضية.",
-        "فحص الثغرات باستخدام Nmap أو OpenVAS.",
-        "تحديث السيرفرات والتطبيقات.",
-        "استخدام WAF للحماية من الهجمات."
-    ]
-    analysis += "\nاقتراحات الهجوم/التدابير:\n"
-    for s in random.sample(suggestions, 2):
-        analysis += f"- {s}\n"
-
-    return analysis
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "أنت خبير في الأمن السيبراني."
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model=model,
+            temperature=0.7,
+            max_tokens=1500
+        )
+        return chat_completion.choices[0].message.content
+    except Exception as e:
+        return f"خطأ في تحليل الذكاء الاصطناعي للمنافذ (Groq): {str(e)}"
