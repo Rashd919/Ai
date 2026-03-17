@@ -1,4 +1,5 @@
 import os
+from config import get_key
 from tavily import TavilyClient
 
 def search_dork(query):
