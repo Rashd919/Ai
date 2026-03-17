@@ -1,12 +1,13 @@
 import random
 import os
+from config import get_key
 from groq import Groq
 import json
 
 class AIHackingAssistant:
     def __init__(self):
         self.name = "CyberShield AI Hacking Assistant"
-        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        self.client = Groq(api_key=get_key("GROQ_API_KEY"))
         self.model = "llama3-8b-8192" # أو أي نموذج Groq آخر تفضله
 
     def analyze_target(self, domain, open_ports=None, tech=None, headers=None):
