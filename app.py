@@ -23,7 +23,9 @@ import ai_analysis
 import report_generator
 from ai_hacking import AIHackingAssistant
 import integration
-import json--- التبويبات ---
+import json
+
+# --- التبويبات ---
 tabs = st.tabs([
     "تحليل الدومين",
     "فحص المواقع",
