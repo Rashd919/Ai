@@ -1,22 +1,21 @@
 import os
-from config import get_key
+import config
 from tavily import TavilyClient
 
 def search_dork(query):
     """
     بحث Google Dork متقدم باستخدام Tavily API.
     """
-    tavily_api_key = os.getenv("TAVILY_API_KEY")
+    tavily_api_key = config.get_key("TAVILY_API_KEY")
     if not tavily_api_key:
-        return {"error": "TAVILY_API_KEY غير موجود في متغيرات البيئة"}
-
-    tavily = TavilyClient(api_key=tavily_api_key)
+        return {"error": "⚠️ TAVILY_API_KEY غير موجود. يرجى إضافته في إعدادات Streamlit أو ملف .env"}
 
     try:
+        tavily = TavilyClient(api_key=tavily_api_key)
         response = tavily.search(query=query, search_depth="advanced")
         
         results = []
-        if response and response["results"]:
+        if response and response.get("results"):
             for res in response["results"]:
                 results.append({
                     "title": res["title"],
@@ -29,4 +28,4 @@ def search_dork(query):
 
         return results
     except Exception as e:
-        return {"error": f"خطأ في بحث Google Dork باستخدام Tavily: {str(e)}"}
+        return {"error": f"❌ خطأ في بحث Google Dork باستخدام Tavily: {str(e)}"}

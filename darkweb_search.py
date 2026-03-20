@@ -1,26 +1,23 @@
 import os
-from config import get_key
+import config
 from tavily import TavilyClient
 
 def darkweb_lookup(query):
     """
     البحث عن معلومات ذات صلة بالشبكة المظلمة باستخدام Tavily API.
-    ملاحظة: البحث الفعلي في الشبكة المظلمة يتطلب أدوات متخصصة ولا يمكن الوصول إليه مباشرة عبر واجهات برمجة التطبيقات العامة.
-    هذه الوظيفة تحاكي البحث عن معلومات قد تكون موجودة في تقارير أو مقالات تتحدث عن الشبكة المظلمة.
     """
-    tavily_api_key = get_key("TAVILY_API_KEY")
+    tavily_api_key = config.get_key("TAVILY_API_KEY")
     if not tavily_api_key:
-        return {"error": "TAVILY_API_KEY غير موجود في متغيرات البيئة"}
-
-    tavily = TavilyClient(api_key=tavily_api_key)
+        return {"error": "⚠️ TAVILY_API_KEY غير موجود. يرجى إضافته في إعدادات Streamlit أو ملف .env"}
 
     try:
+        tavily = TavilyClient(api_key=tavily_api_key)
         # البحث عن معلومات ذات صلة بالشبكة المظلمة
-        search_query = f"dark web mentions of {query}"
+        search_query = f"dark web mentions and leaks of {query}"
         response = tavily.search(query=search_query, search_depth="advanced")
         
         results = []
-        if response and response["results"]:
+        if response and response.get("results"):
             for res in response["results"]:
                 results.append({
                     "title": res["title"],
@@ -33,4 +30,4 @@ def darkweb_lookup(query):
 
         return results
     except Exception as e:
-        return {"error": f"خطأ في البحث في الشبكة المظلمة باستخدام Tavily: {str(e)}"}
+        return {"error": f"❌ خطأ في البحث في الشبكة المظلمة باستخدام Tavily: {str(e)}"}
