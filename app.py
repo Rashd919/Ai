@@ -202,22 +202,24 @@ with tabs[7]:
 
 # 9. Email OSINT
 with tabs[8]:
+    st.subheader("📧 فحص تسريبات البريد الإلكتروني")
     email_target = st.text_input("أدخل البريد الإلكتروني", key="email_input_main")
-    if st.button("فحص البريد", key="email_btn_main"):
-        with st.spinner("جاري البحث..."):
+    if st.button("فحص التسريبات", key="email_btn_main"):
+        with st.spinner("جاري البحث في قواعد بيانات التسريبات..."):
             try:
                 res = email_osint.email_search(email_target)
                 if "error" in res:
                     st.error(res["error"])
                 else:
-                    if "Tavily_Analysis" in res:
-                        st.markdown("### 🧠 تحليل الذكاء الاصطناعي")
-                        st.write(res["Tavily_Analysis"])
-                    if "Search_Results" in res:
-                        st.markdown("### 🔗 نتائج البحث")
-                        for r in res["Search_Results"]:
-                            st.markdown(f"**[{r['title']}]({r['url']})**")
-                            st.caption(r['snippet'])
+                    st.markdown("### 🧠 النتيجة النهائية")
+                    st.info(res["Analysis"])
+                    
+                    if res.get("Results"):
+                        with st.expander("🔗 المصادر والأدلة المكتشفة"):
+                            for r in res["Results"]:
+                                st.markdown(f"**[{r['title']}]({r['url']})**")
+                                st.caption(r['snippet'])
+                                st.divider()
             except Exception as e:
                 st.error(f"حدث خطأ: {str(e)}")
 
@@ -240,19 +242,26 @@ with tabs[9]:
 
 # 11. Dark Web
 with tabs[10]:
-    dark_query = st.text_input("أدخل الكلمة المفتاحية للبحث", key="dark_input_main")
-    if st.button("بحث Dark Web", key="dark_btn_main"):
-        with st.spinner("جاري البحث..."):
-            res = darkweb_search.darkweb_lookup(dark_query)
-            if isinstance(res, list):
-                for r in res:
-                    st.markdown(f"🌑 **[{r['title']}]({r['url']})**")
-                    st.caption(r['snippet'])
-                    st.divider()
-            elif isinstance(res, dict) and "message" in res:
-                st.info(res["message"])
-            else:
-                st.error(res.get("error", "لا توجد نتائج"))
+    st.subheader("🌑 البحث في أرشيفات الدارك ويب")
+    dark_query = st.text_input("أدخل الكلمة المفتاحية (إيميل، دومين، اسم)", key="dark_input_main")
+    if st.button("بحث الدارك ويب", key="dark_btn_main"):
+        with st.spinner("جاري البحث عن نشاط مشبوه..."):
+            try:
+                res = darkweb_search.darkweb_lookup(dark_query)
+                if "error" in res:
+                    st.error(res["error"])
+                else:
+                    st.markdown("### 🧠 تحليل النشاط")
+                    st.info(res["Analysis"])
+                    
+                    if res.get("Results"):
+                        with st.expander("🔗 الأدلة المكتشفة من الأرشيف"):
+                            for r in res["Results"]:
+                                st.markdown(f"🌑 **[{r['title']}]({r['url']})**")
+                                st.caption(r['snippet'])
+                                st.divider()
+            except Exception as e:
+                st.error(f"حدث خطأ: {str(e)}")
 
 # 12. Port Scanner
 with tabs[11]:
@@ -328,8 +337,8 @@ with tabs[16]:
                     if os.path.exists(file_path):
                         with open(file_path, "rb") as f:
                             st.download_button("📥 تحميل التقرير", f, file_name=os.path.basename(file_path))
-                    else:
-                        st.error("حدث خطأ أثناء إنشاء ملف التقرير")
+                else:
+                    st.error("حدث خطأ أثناء إنشاء ملف التقرير")
                 except Exception as e:
                     st.error(f"حدث خطأ: {str(e)}")
         else:
