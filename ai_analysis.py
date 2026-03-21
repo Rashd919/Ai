@@ -4,36 +4,37 @@ import config
 
 def analyze_ports(domain, open_ports):
     """
-    تحليل المنافذ المفتوحة باستخدام LLM (Groq).
+    تحليل المنافذ المفتوحة بأسلوب دفاعي ومختصر.
     """
     api_key = config.get_key("GROQ_API_KEY")
     if not api_key:
-        return "⚠️ خطأ: GROQ_API_KEY غير موجود. يرجى إضافته في إعدادات Streamlit أو ملف .env"
+        return "⚠️ خطأ: GROQ_API_KEY غير موجود."
 
     try:
         client = Groq(api_key=api_key)
         model = config.GROQ_MODEL
 
-        prompt = f"أنت خبير في الأمن السيبراني. قم بتحليل المنافذ المفتوحة التالية للهدف {domain}:\n"
-        if open_ports:
-            prompt += f"المنافذ المفتوحة: {', '.join(map(str, open_ports))}.\n"
-        else:
-            prompt += "لا توجد منافذ مفتوحة.\n"
+        prompt = f"""
+        أنت خبير في التحليل الأمني الدفاعي. قم بتحليل المنافذ المفتوحة التالية للهدف {domain}:
+        المنافذ: {', '.join(map(str, open_ports)) if open_ports else 'لا توجد منافذ مفتوحة'}
 
-        prompt += "\nبناءً على هذه المعلومات، قدم تقريرًا مفصلاً يتضمن:\n"
-        prompt += "1. ملخصًا للوضع الأمني المتعلق بالمنافذ.\n"
-        prompt += "2. الثغرات المحتملة المرتبطة بكل منفذ.\n"
-        prompt += "3. اقتراحات محددة لتحصين هذه المنافذ أو استغلالها (إذا كان الهدف اختبار اختراق)."
+        المطلوب:
+        1. ملخص أمني سريع (Quick Security Summary).
+        2. المخاطر المرتبطة بهذه المنافذ (Associated Risks).
+        3. خطوات التحصين (Hardening Steps).
+
+        اجعل الإجابة باللغة العربية، مختصرة جداً، ومباشرة.
+        """
 
         chat_completion = client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "أنت خبير في الأمن السيبراني."},
+                {"role": "system", "content": "أنت محلل أمني دفاعي خبير. إجاباتك تقنية، مختصرة، ومباشرة."},
                 {"role": "user", "content": prompt}
             ],
             model=model,
-            temperature=0.7,
-            max_tokens=1500
+            temperature=0.5,
+            max_tokens=600
         )
         return chat_completion.choices[0].message.content
     except Exception as e:
-        return f"❌ خطأ في تحليل الذكاء الاصطناعي للمنافذ (Groq): {str(e)}"
+        return f"❌ خطأ في تحليل المنافذ: {str(e)}"

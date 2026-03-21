@@ -4,25 +4,24 @@ import config
 
 def scan_vulnerabilities(target):
     """
-    البحث عن الثغرات الأمنية للهدف باستخدام Tavily API.
+    البحث عن الثغرات الأمنية بأسلوب مستقر ومختصر.
     """
     tavily_api_key = config.get_key("TAVILY_API_KEY")
     if not tavily_api_key:
-        return {"error": "⚠️ TAVILY_API_KEY غير موجود. يرجى إضافته في إعدادات Streamlit أو ملف .env"}
+        return {"error": "⚠️ TAVILY_API_KEY غير موجود."}
 
     try:
         tavily = TavilyClient(api_key=tavily_api_key)
-        # البحث عن ثغرات معروفة للهدف
-        query = f"known vulnerabilities and CVE for {target}"
-        response = tavily.search(query=query, search_depth="advanced")
+        query = f"known CVE and security vulnerabilities for {target} summary"
+        response = tavily.search(query=query, search_depth="basic")
         
         results = []
         if response and response.get("results"):
-            for res in response["results"]:
+            for res in response["results"][:5]: # نأخذ أهم 5 نتائج
                 results.append({
                     "title": res["title"],
                     "url": res["url"],
-                    "snippet": res["content"]
+                    "snippet": res["content"][:250] + "..."
                 })
         
         if not results:
@@ -30,4 +29,5 @@ def scan_vulnerabilities(target):
 
         return results
     except Exception as e:
-        return {"error": f"❌ خطأ في فحص الثغرات باستخدام Tavily: {str(e)}"}
+        # في حال فشل Tavily، نحاول إرجاع رسالة مفهومة بدلاً من الخطأ التقني
+        return {"error": f"⚠️ واجه النظام مشكلة أثناء الفحص. يرجى المحاولة لاحقاً."}
