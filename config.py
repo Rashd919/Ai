@@ -26,4 +26,10 @@ def get_key(key):
 
 # إعدادات النماذج المدعومة حالياً في Groq
 GROQ_MODEL = "llama-3.3-70b-versatile" # النموذج الأحدث والأكثر استقراراً
-# بدائل في حال الحاجة: "llama3-8b-8192", "mixtral-8x7b-32768"
+
+# إعدادات إضافية للميزات الجديدة
+GITHUB_TOKEN = get_key("GITHUB_TOKEN")
+TELEGRAM_BOT_TOKEN = get_key("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = get_key("TELEGRAM_CHAT_ID")
+REPO_NAME = "Rashd919/Ai"
+LOGO_PATH = "logo.png"
