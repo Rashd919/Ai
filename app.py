@@ -41,33 +41,36 @@ load_dotenv()
 # --- مظهر الهاكر (Matrix Style) ---
 st.markdown("""
     <style>
-    .main {
+    .stApp {
         background-color: #0a0a0a;
         color: #00ff00;
     }
     .stButton>button {
-        background-color: #00ff00;
-        color: black;
+        background-color: #00ff00 !important;
+        color: black !important;
         border-radius: 5px;
         border: none;
         font-weight: bold;
     }
     .stTextInput>div>div>input {
-        background-color: #1a1a1a;
-        color: #00ff00;
-        border: 1px solid #00ff00;
+        background-color: #1a1a1a !important;
+        color: #00ff00 !important;
+        border: 1px solid #00ff00 !important;
     }
     .stTab {
-        color: #00ff00;
-    }
-    h1, h2, h3, h4, h5, h6, p, span, label {
         color: #00ff00 !important;
-        font-family: 'Courier New', Courier, monospace;
+    }
+    h1, h2, h3, h4, h5, h6, p, span, label, div {
+        color: #00ff00 !important;
+        font-family: 'Courier New', Courier, monospace !important;
     }
     .stAlert {
-        background-color: #1a1a1a;
-        color: #00ff00;
-        border: 1px solid #00ff00;
+        background-color: #1a1a1a !important;
+        color: #00ff00 !important;
+        border: 1px solid #00ff00 !important;
+    }
+    .sidebar .sidebar-content {
+        background-color: #0a0a0a !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -148,15 +151,7 @@ with tabs[0]:
 
         with st.chat_message("assistant"):
             assistant = AIChatAssistant()
-            # فحص إذا كان الطلب تعديل ملف على GitHub
-            if "تعديل ملف" in prompt or "update file" in prompt.lower():
-                st.info("جاري معالجة طلب تعديل GitHub...")
-                # مثال بسيط: استخراج المسار والمحتوى (يمكن تحسينه بالذكاء الاصطناعي)
-                # هنا سنفترض أن المستخدم سيوضح المسار والمحتوى في رسائل لاحقة أو نستخدم الذكاء الاصطناعي لاستخلاصها
-                response = assistant.chat(prompt, st.session_state.chat_history[:-1])
-            else:
-                response = assistant.chat(prompt, st.session_state.chat_history[:-1])
-            
+            response = assistant.chat(prompt, st.session_state.chat_history[:-1])
             st.markdown(response)
             st.session_state.chat_history.append({"role": "assistant", "content": response})
             
@@ -356,10 +351,10 @@ with tabs[11]:
 with tabs[12]:
     port_target = st.text_input("أدخل IP للفحص", key="port_input")
     if st.button("SCAN PORTS"):
-        with st.spinner("SCANNING..."):
+        with st.spinner("SEARCHING FOR OPEN PORTS..."):
             try:
                 res = port_scanner.scan_ports(port_target)
-                st.code(res)
+                st.markdown(res)
             except Exception as e:
                 st.error(f"ERROR: {str(e)}")
 
@@ -384,9 +379,11 @@ with tabs[14]:
     if st.button("MAP NETWORK"):
         with st.spinner("MAPPING..."):
             try:
-                res = network_mapper.map_network(net_target)
+                # استخدام النطاقات الفرعية المكتشفة فعلياً
+                subs = st.session_state.get("subs", {})
+                res = network_mapper.map_network(net_target, subs)
                 if isinstance(res, io.BytesIO):
-                    st.image(res, caption=f"NETWORK MAP: {net_target}")
+                    st.image(res, caption=f"REAL NETWORK MAP: {net_target}")
                 else:
                     st.error(res)
             except Exception as e:
