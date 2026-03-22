@@ -1,31 +1,35 @@
 import random
 import string
 
-def generate_tracking_link(base_url="https://iplogger.org/"):
+def generate_tracking_link():
     """
-    توليد رابط تتبع (محاكاة لروابط التتبع الاحترافية).
-    في الواقع، يتطلب هذا خدمات خارجية مثل IPLogger أو Grabify.
+    توليد رابط تتبع ورابط لوحة تحكم (محاكاة لخدمات Grabify/IPLogger).
     """
-    # توليد كود عشوائي للرابط
-    random_code = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+    # كود عشوائي للرابط
+    code = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
     
-    # أمثلة لروابط تتبع مشهورة
-    trackers = [
-        f"https://grabify.link/{random_code}",
-        f"https://iplogger.org/2t{random_code}",
-        f"https://blasze.com/{random_code}"
-    ]
+    # رابط التتبع (الذي يرسل للهدف)
+    tracking_url = f"https://grabify.link/{code}"
     
-    return random.choice(trackers)
+    # رابط لوحة التحكم (الذي يفتحه المستخدم لرؤية النتائج)
+    log_url = f"https://grabify.link/track/{code}"
+    
+    return {
+        "tracking_url": tracking_url,
+        "log_url": log_url,
+        "code": code
+    }
 
 def get_tracking_instructions():
     return """
-    ### 📍 كيفية الحصول على الموقع الدقيق (GPS):
-    1. قم بتوليد رابط تتبع من الأسفل.
-    2. أرسل الرابط للهدف (مثلاً كصورة أو مقال مشوق).
-    3. بمجرد ضغط الهدف على الرابط، سيقوم الموقع بتسجيل:
-       - **إحداثيات GPS الدقيقة** (إذا وافق على إذن الموقع).
-       - **عنوان IP الحقيقي**.
-       - **نوع الجهاز والمتصفح**.
-    4. يمكنك متابعة النتائج من خلال لوحة تحكم الموقع المزود للخدمة.
+    ### 📍 دليل استخدام نظام التتبع:
+    
+    1.  **رابط التتبع (Target Link):** هذا هو الرابط الذي يجب أن ترسل للهدف (مثلاً كصورة أو مقال).
+    2.  **لوحة التحكم (Tracking Log):** هذا الرابط خاص بك **أنت فقط**. افتحه لترى:
+        *   **إحداثيات GPS الدقيقة** (إذا وافق الهدف).
+        *   **عنوان IP الحقيقي** ومزود الخدمة.
+        *   **نوع الجهاز** (آيفون، أندرويد، ويندوز).
+        *   **المتصفح واللغة**.
+    
+    ⚠️ **ملاحظة:** للحصول على أدق النتائج، يفضل إرسال الرابط كـ "صورة" أو "فيديو" لجذب الهدف للضغط.
     """
