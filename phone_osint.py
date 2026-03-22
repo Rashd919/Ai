@@ -5,7 +5,7 @@ from groq import Groq
 
 def phone_lookup(number):
     """
-    البحث عن معلومات رقم الهاتف وتحليلها بالذكاء الاصطناعي لتقديم نتيجة عربية نظيفة.
+    البحث العميق عن رقم الهاتف في منصات التواصل الاجتماعي وقواعد البيانات المفتوحة وتحليلها بالذكاء الاصطناعي.
     """
     tavily_key = config.get_key("TAVILY_API_KEY")
     groq_key = config.get_key("GROQ_API_KEY")
@@ -14,19 +14,35 @@ def phone_lookup(number):
         return "⚠️ مفتاح TAVILY_API_KEY غير موجود للبحث."
 
     try:
-        # 1. البحث عن الرقم عبر Tavily
+        # 1. البحث العميق عبر Tavily (لإيجاد الاسم والحسابات المرتبطة)
         tavily = TavilyClient(api_key=tavily_key)
-        query = f'owner name and location for phone number {number} caller id info'
-        response = tavily.search(query=query, search_depth="advanced")
+        # استعلامات بحث متعددة لضمان أفضل النتائج
+        queries = [
+            f'owner name and social media profiles for phone number "{number}"',
+            f'"{number}" facebook instagram tiktok twitter linkedin profile',
+            f'"{number}" caller id info location service provider'
+        ]
         
-        results = response.get("results", [])
-        if not results:
-            return f"❌ لم يتم العثور على معلومات عامة لرقم الهاتف: {number}"
+        all_results = []
+        for q in queries:
+            response = tavily.search(query=q, search_depth="advanced")
+            all_results.extend(response.get("results", []))
+        
+        if not all_results:
+            return f"❌ لم يتم العثور على معلومات علنية مرتبطة برقم الهاتف: {number}"
 
-        # 2. تحليل النتائج بالذكاء الاصطناعي (Groq) إذا توفر المفتاح
+        # 2. تحليل النتائج بالذكاء الاصطناعي (Groq) لتقديم عرض نظيف وحقيقي
         if groq_key:
             client = Groq(api_key=groq_key)
-            context = "\n".join([f"- {r['title']}: {r['content'][:300]}" for r in results[:5]])
+            # تجميع محتوى فريد من النتائج
+            unique_content = []
+            seen_urls = set()
+            for r in all_results:
+                if r['url'] not in seen_urls:
+                    unique_content.append(f"- {r['title']}: {r['content'][:300]}")
+                    seen_urls.add(r['url'])
+            
+            context = "\n".join(unique_content[:10])
             
             prompt = f"""
             أنت خبير استخبارات أمنية (OSINT). لديك نتائج بحث عن رقم الهاتف: {number}
@@ -34,10 +50,11 @@ def phone_lookup(number):
             {context}
             
             المطلوب:
-            قم بتحليل هذه النتائج واستخراج (الاسم المحتمل، الموقع، مزود الخدمة) إن وجد.
-            قدم الإجابة باللغة العربية فقط، بشكل مختصر ومباشر جداً.
-            إذا لم تجد اسماً صريحاً، قل "لم يتم العثور على اسم صريح، ولكن الرقم مرتبط بـ...".
-            لا تظهر أي رموز برمجية أو أقواس أو JSON.
+            1. استخرج (الاسم الحقيقي أو المحتمل، الموقع الجغرافي، مزود الخدمة).
+            2. ابحث عن أي روابط لملفات شخصية على (فيسبوك، إنستغرام، تيك توك، واتساب، إلخ) مرتبطة بهذا الرقم.
+            3. قدم الإجابة باللغة العربية فقط، بشكل مرتب، مختصر، ومباشر جداً.
+            4. لا تظهر أي رموز برمجية أو JSON أو أقواس.
+            5. ابدأ بـ "🔍 نتائج التحقيق للرقم {number}:"
             """
             
             completion = client.chat.completions.create(
@@ -48,8 +65,12 @@ def phone_lookup(number):
         else:
             # عرض النتائج بشكل نصي بسيط إذا لم يتوفر Groq
             output = f"🔍 نتائج البحث عن الرقم {number}:\n\n"
-            for r in results[:3]:
-                output += f"🔹 {r['title']}\n🔗 {r['url']}\n\n"
+            seen_urls = set()
+            for r in all_results:
+                if r['url'] not in seen_urls:
+                    output += f"🔹 {r['title']}\n🔗 {r['url']}\n\n"
+                    seen_urls.add(r['url'])
+                    if len(seen_urls) >= 5: break
             return output
 
     except Exception as e:
