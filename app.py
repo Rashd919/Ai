@@ -45,46 +45,73 @@ def get_image_as_base64(path):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# --- مظهر مستقر ونظيف (Clean Dark Theme) ---
+# --- مظهر مستقر واحترافي (Professional Dark Theme) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
     
+    /* الخط العام والاتجاه */
     html, body, [class*="st-"] {
         font-family: 'Cairo', sans-serif !important;
+    }
+    
+    /* إصلاح اتجاه النصوص في المحتوى الرئيسي فقط */
+    .main .block-container {
         direction: rtl;
         text-align: right;
     }
     
-    /* لمسات بسيطة باللون الأخضر دون تداخل */
+    /* لمسات بسيطة باللون الأخضر */
     .stButton>button {
         background-color: #00ff00 !important;
         color: black !important;
         font-weight: bold;
         border-radius: 8px;
         width: 100%;
+        border: none;
     }
     
     h1, h2, h3 {
         color: #00ff00 !important;
-    }}
+        text-align: center;
+    }
     
     /* منع الأيقونة من الفتح كصورة مستقلة */
     .logo-container img {
         pointer-events: none;
         user-select: none;
         border-radius: 50%;
-        border: 2px solid #00ff00;
+        border: 3px solid #00ff00;
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
     }
     
-    /* تحسين عرض التبويبات على الجوال */
+    /* إصلاح الشريط الجانبي (Sidebar) ليكون مستقراً */
+    [data-testid="stSidebar"] {
+        background-color: #0e1117 !important;
+        border-left: 1px solid #00ff00;
+    }
+    
+    [data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] .stText {
+        text-align: right !important;
+        direction: rtl !important;
+    }
+
+    /* تحسين عرض التبويبات */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 5px;
+        gap: 8px;
+        direction: rtl;
     }
     
     .stTabs [data-baseweb="tab"] {
-        height: 40px;
+        height: 45px;
         white-space: nowrap;
+        background-color: #1a1a1a !important;
+        border-radius: 5px 5px 0 0 !important;
+        color: #00ff00 !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        border-bottom: 2px solid #00ff00 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -93,9 +120,9 @@ st.markdown("""
 with st.sidebar:
     if os.path.exists(logo_path):
         img_base64 = get_image_as_base64(logo_path)
-        st.markdown(f'<div class="logo-container" style="text-align:center; margin-bottom: 20px;"><img src="data:image/png;base64,{img_base64}" width="120"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="logo-container" style="text-align:center; margin-top: 20px; margin-bottom: 20px;"><img src="data:image/png;base64,{img_base64}" width="130"></div>', unsafe_allow_html=True)
     
-    st.title("⚙️ الإعدادات")
+    st.markdown("<h2 style='text-align: center; font-size: 24px;'>⚙️ الإعدادات</h2>", unsafe_allow_html=True)
     
     with st.expander("🔑 مفاتيح API"):
         groq_key = st.text_input("مفتاح GROQ", type="password", value=config.get_key("GROQ_API_KEY") or "")
@@ -115,7 +142,7 @@ with st.sidebar:
         if tg_chat_id: st.session_state["TELEGRAM_CHAT_ID"] = tg_chat_id
 
     st.divider()
-    st.markdown("### 🛠️ حالة النظام")
+    st.markdown("<h3 style='font-size: 18px;'>🛠️ حالة النظام</h3>", unsafe_allow_html=True)
     if config.get_key("GROQ_API_KEY"): st.success("✅ الذكاء الاصطناعي: متصل")
     else: st.warning("⚠️ الذكاء الاصطناعي: غير متصل")
     
@@ -123,7 +150,7 @@ with st.sidebar:
     else: st.warning("⚠️ محرك البحث: غير متصل")
 
 st.title("🛡️ سايبر شيلد برو")
-st.markdown("`>> تم تهيئة النظام بنجاح...`")
+st.markdown("<p style='text-align: center;'><code>>> تم تهيئة النظام بنجاح... تم منح الوصول...</code></p>", unsafe_allow_html=True)
 
 # --- التبويبات ---
 tabs = st.tabs([
@@ -156,15 +183,15 @@ with tabs[0]:
 
 # 1. تحليل الدومين
 with tabs[1]:
-    domain = st.text_input("أدخل الدومين", key="dom_in")
-    if st.button("تحليل"):
+    domain = st.text_input("أدخل الدومين", key="dom_in_v3")
+    if st.button("تحليل الدومين"):
         with st.spinner("جاري العمل..."):
             try:
                 whois = domain_osint.whois_lookup(domain)
                 dns = domain_osint.dns_lookup(domain)
                 subs = domain_osint.subdomain_scan(domain)
                 st.code(whois, language="text")
-                st.write("### النطاقات الفرعية", subs)
+                st.write("### النطاقات الفرعية المكتشفة", subs)
                 st.session_state["domain"] = domain
                 st.session_state["subs"] = subs
             except Exception as e:
@@ -172,28 +199,28 @@ with tabs[1]:
 
 # 2. فحص المواقع
 with tabs[2]:
-    url = st.text_input("رابط الموقع", key="url_in")
-    if st.button("فحص"):
+    url = st.text_input("رابط الموقع", key="url_in_v3")
+    if st.button("فحص الموقع"):
         with st.spinner("جاري الفحص..."):
             try:
                 tech = website_scan.detect_tech(url)
-                st.write("### التقنيات", tech)
+                st.write("### التقنيات المكتشفة", tech)
                 st.session_state["scan"] = {"tech": tech}
             except Exception as e:
                 st.error(f"خطأ: {str(e)}")
 
 # 3. بحث عن المستخدم
 with tabs[3]:
-    user = st.text_input("اسم المستخدم", key="user_in")
-    if st.button("بحث"):
+    user = st.text_input("اسم المستخدم", key="user_in_v3")
+    if st.button("بحث عن المستخدم"):
         with st.spinner("جاري البحث..."):
             res = username_osint.username_search(user)
             st.write(res)
 
 # 4. الموقع الجغرافي
 with tabs[4]:
-    ip_in = st.text_input("IP", key="ip_in")
-    if st.button("تحديد"):
+    ip_in = st.text_input("عنوان IP", key="ip_in_v3")
+    if st.button("تحديد الموقع"):
         st.json(geoip_osint.geoip(ip_in))
 
 # 5. سطح الهجوم
@@ -210,73 +237,73 @@ with tabs[6]:
 
 # 7. مساعد الهجوم
 with tabs[7]:
-    t = st.text_input("الهدف", key="ai_t")
-    p = st.text_input("المنافذ", key="ai_p")
-    if st.button("تحليل ذكي"):
+    t = st.text_input("الهدف", key="ai_t_v3")
+    p = st.text_input("المنافذ المفتوحة", key="ai_p_v3")
+    if st.button("تحليل الهدف بالذكاء الاصطناعي"):
         st.markdown(AIHackingAssistant().analyze_target(t, p, ""))
 
 # 8. جوجل دورك
 with tabs[8]:
-    dq = st.text_input("Dork", key="dq_in")
-    if st.button("بحث دورك"):
+    dq = st.text_input("Dork Query", key="dq_in_v3")
+    if st.button("بحث جوجل دورك"):
         st.write(google_dork.search_dork(dq))
 
 # 9. تسريبات الإيميل
 with tabs[9]:
-    em = st.text_input("الإيميل", key="em_in")
-    if st.button("فحص تسريبات"):
+    em = st.text_input("البريد الإلكتروني", key="em_in_v3")
+    if st.button("فحص تسريبات الإيميل"):
         res = email_osint.email_search(em)
         st.info(res.get("Analysis", "لا توجد نتائج"))
         if res.get("Results"): st.write(res["Results"])
 
 # 10. بحث الهاتف
 with tabs[10]:
-    ph = st.text_input("رقم الهاتف", key="ph_in")
-    if st.button("بحث هاتف"):
+    ph = st.text_input("رقم الهاتف", key="ph_in_v3")
+    if st.button("بحث عن رقم الهاتف"):
         st.write(phone_osint.phone_lookup(ph))
 
 # 11. الدارك ويب
 with tabs[11]:
-    dq = st.text_input("كلمة مفتاحية", key="dk_in")
-    if st.button("بحث دارك ويب"):
-        res = darkweb_search.darkweb_lookup(dq)
+    dq_dark = st.text_input("كلمة مفتاحية للبحث", key="dk_in_v3")
+    if st.button("بحث في الدارك ويب"):
+        res = darkweb_search.darkweb_lookup(dq_dark)
         st.info(res.get("Analysis", "لا توجد نتائج"))
 
 # 12. المنافذ
 with tabs[12]:
-    pt = st.text_input("IP للفحص", key="pt_in")
-    if st.button("فحص منافذ"):
+    pt = st.text_input("IP للفحص", key="pt_in_v3")
+    if st.button("فحص المنافذ"):
         st.markdown(port_scanner.scan_ports(pt))
 
 # 13. الثغرات
 with tabs[13]:
-    vt = st.text_input("الهدف", key="vt_in")
-    if st.button("فحص ثغرات"):
+    vt = st.text_input("الهدف للفحص", key="vt_in_v3")
+    if st.button("فحص الثغرات"):
         st.write(vuln_scanner.scan_vulnerabilities(vt))
 
 # 14. خريطة الشبكة
 with tabs[14]:
-    nt = st.text_input("الهدف للرسم", key="nt_in")
-    if st.button("رسم"):
+    nt = st.text_input("الهدف للرسم", key="nt_in_v3")
+    if st.button("رسم خريطة الشبكة"):
         st.image(network_mapper.map_network(nt, st.session_state.get("subs", {})))
 
 # 15. التهديدات
 with tabs[15]:
-    tt = st.text_input("الهدف للتحليل", key="tt_in")
-    if st.button("تحليل تهديدات"):
+    tt = st.text_input("الهدف للتحليل", key="tt_in_v3")
+    if st.button("تحليل التهديدات"):
         st.markdown(ai_threat.analyze_threat(tt))
 
 # 16. خطة الاختراق
 with tabs[16]:
-    pt = st.text_input("الهدف للخطة", key="pt_plan")
-    if st.button("توليد خطة"):
-        st.markdown(ai_pentest.pentest_advice(pt, [], ""))
+    pt_plan = st.text_input("الهدف للخطة", key="pt_plan_v3")
+    if st.button("توليد خطة الاختراق"):
+        st.markdown(ai_pentest.pentest_advice(pt_plan, [], ""))
 
 # 17. التقارير
 with tabs[17]:
-    if st.button("توليد تقرير PDF"):
+    if st.button("توليد تقرير PDF نهائي"):
         if "domain" in st.session_state:
             path = report_generator.create_report(st.session_state)
             with open(path, "rb") as f:
-                st.download_button("تحميل التقرير", f, file_name="report.pdf")
+                st.download_button("تحميل التقرير السري", f, file_name="classified_report.pdf")
         else: st.warning("يرجى إجراء فحوصات أولاً")
