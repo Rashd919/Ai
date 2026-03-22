@@ -21,11 +21,13 @@ import phone_osint
 import website_scan
 import username_osint
 import geoip_osint
+import ip_tracker
 import attack_surface
 import ai_analysis
 import report_generator
 import telegram_bot
 import location_tracker
+
 from ai_hacking import AIHackingAssistant
 from ai_chat import AIChatAssistant
 
@@ -232,26 +234,23 @@ with tabs[4]:
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### 🔍 تحديد موقع IP")
+        st.markdown("#### 🔍 تحديد موقع IP (IP-API.com)")
         ip_in = st.text_input("عنوان IP", key="ip_in_v5")
         if st.button("تحديد موقع IP"):
-            st.json(geoip_osint.geoip(ip_in))
+            with st.spinner("جاري جلب معلومات الموقع..."):
+                try:
+                    result = ip_tracker.get_ip_geolocation(ip_in)
+                    if "error" in result:
+                        st.error(f"❌ {result['error']}")
+                    else:
+                        st.success("✅ تم جلب المعلومات بنجاح")
+                        st.json(result)
+                except Exception as e:
+                    st.error(f"❌ خطأ: {str(e)}")
             
     with col2:
-        st.markdown("#### 🔗 توليد رابط تتبع GPS")
-        st.info("استخدم هذه الميزة للحصول على إحداثيات GPS دقيقة.")
-        if st.button("توليد رابط تتبع جديد"):
-            res = location_tracker.generate_tracking_link()
-            st.success(f"تم توليد الروابط بنجاح:")
-            
-            st.markdown("#### 🔗 رابط التتبع (أرسله للهدف):")
-            st.code(res["tracking_url"], language="text")
-            
-            st.markdown("#### 📊 لوحة التحكم (افتحه أنت لمتابعة النتائج):")
-            st.code(res["log_url"], language="text")
-            st.link_button("فتح لوحة التحكم الآن", res["log_url"])
-            
-            st.markdown(location_tracker.get_tracking_instructions())
+        st.markdown("#### ℹ️ معلومات إضافية")
+        st.markdown(location_tracker.get_tracking_instructions())
 
 # 5. سطح الهجوم
 with tabs[5]:
@@ -320,7 +319,11 @@ with tabs[13]:
 with tabs[14]:
     nt = st.text_input("الهدف للرسم", key="nt_in_v5")
     if st.button("رسم خريطة الشبكة"):
-        st.image(network_mapper.map_network(nt, st.session_state.get("subs", {})))
+        network_map_result = network_mapper.map_network(nt, st.session_state.get("subs", {}))
+        if isinstance(network_map_result, str):
+            st.warning(network_map_result)
+        else:
+            st.image(network_map_result)
 
 # 15. التهديدات
 with tabs[15]:
