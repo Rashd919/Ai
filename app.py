@@ -183,7 +183,7 @@ with tabs[0]:
 
 # 1. تحليل الدومين
 with tabs[1]:
-    domain = st.text_input("أدخل الدومين", key="dom_in_v3")
+    domain = st.text_input("أدخل الدومين", key="dom_in_v4")
     if st.button("تحليل الدومين"):
         with st.spinner("جاري العمل..."):
             try:
@@ -199,7 +199,7 @@ with tabs[1]:
 
 # 2. فحص المواقع
 with tabs[2]:
-    url = st.text_input("رابط الموقع", key="url_in_v3")
+    url = st.text_input("رابط الموقع", key="url_in_v4")
     if st.button("فحص الموقع"):
         with st.spinner("جاري الفحص..."):
             try:
@@ -211,7 +211,7 @@ with tabs[2]:
 
 # 3. بحث عن المستخدم
 with tabs[3]:
-    user = st.text_input("اسم المستخدم", key="user_in_v3")
+    user = st.text_input("اسم المستخدم", key="user_in_v4")
     if st.button("بحث عن المستخدم"):
         with st.spinner("جاري البحث..."):
             res = username_osint.username_search(user)
@@ -219,7 +219,7 @@ with tabs[3]:
 
 # 4. الموقع الجغرافي
 with tabs[4]:
-    ip_in = st.text_input("عنوان IP", key="ip_in_v3")
+    ip_in = st.text_input("عنوان IP", key="ip_in_v4")
     if st.button("تحديد الموقع"):
         st.json(geoip_osint.geoip(ip_in))
 
@@ -237,65 +237,70 @@ with tabs[6]:
 
 # 7. مساعد الهجوم
 with tabs[7]:
-    t = st.text_input("الهدف", key="ai_t_v3")
-    p = st.text_input("المنافذ المفتوحة", key="ai_p_v3")
+    t = st.text_input("الهدف", key="ai_t_v4")
+    p = st.text_input("المنافذ المفتوحة", key="ai_p_v4")
     if st.button("تحليل الهدف بالذكاء الاصطناعي"):
         st.markdown(AIHackingAssistant().analyze_target(t, p, ""))
 
 # 8. جوجل دورك
 with tabs[8]:
-    dq = st.text_input("Dork Query", key="dq_in_v3")
+    dq = st.text_input("Dork Query", key="dq_in_v4")
     if st.button("بحث جوجل دورك"):
         st.write(google_dork.search_dork(dq))
 
 # 9. تسريبات الإيميل
 with tabs[9]:
-    em = st.text_input("البريد الإلكتروني", key="em_in_v3")
+    em = st.text_input("البريد الإلكتروني", key="em_in_v4")
     if st.button("فحص تسريبات الإيميل"):
-        res = email_osint.email_search(em)
-        st.info(res.get("Analysis", "لا توجد نتائج"))
-        if res.get("Results"): st.write(res["Results"])
+        with st.spinner("جاري البحث في قواعد بيانات التسريبات..."):
+            res = email_osint.email_search(em)
+            st.markdown(f"### 📧 نتيجة فحص التسريبات لـ {em}")
+            st.markdown(res)
 
 # 10. بحث الهاتف
 with tabs[10]:
-    ph = st.text_input("رقم الهاتف", key="ph_in_v3")
+    ph = st.text_input("رقم الهاتف", key="ph_in_v4")
     if st.button("بحث عن رقم الهاتف"):
-        st.write(phone_osint.phone_lookup(ph))
+        with st.spinner("جاري البحث عن معلومات الرقم..."):
+            res = phone_osint.phone_lookup(ph)
+            st.markdown(f"### 📱 نتيجة البحث عن الرقم {ph}")
+            st.markdown(res)
 
 # 11. الدارك ويب
 with tabs[11]:
-    dq_dark = st.text_input("كلمة مفتاحية للبحث", key="dk_in_v3")
+    dq_dark = st.text_input("كلمة مفتاحية للبحث", key="dk_in_v4")
     if st.button("بحث في الدارك ويب"):
-        res = darkweb_search.darkweb_lookup(dq_dark)
-        st.info(res.get("Analysis", "لا توجد نتائج"))
+        with st.spinner("جاري البحث في أرشيفات الدارك ويب..."):
+            res = darkweb_search.darkweb_lookup(dq_dark)
+            st.markdown(res)
 
 # 12. المنافذ
 with tabs[12]:
-    pt = st.text_input("IP للفحص", key="pt_in_v3")
+    pt = st.text_input("IP للفحص", key="pt_in_v4")
     if st.button("فحص المنافذ"):
         st.markdown(port_scanner.scan_ports(pt))
 
 # 13. الثغرات
 with tabs[13]:
-    vt = st.text_input("الهدف للفحص", key="vt_in_v3")
+    vt = st.text_input("الهدف للفحص", key="vt_in_v4")
     if st.button("فحص الثغرات"):
         st.write(vuln_scanner.scan_vulnerabilities(vt))
 
 # 14. خريطة الشبكة
 with tabs[14]:
-    nt = st.text_input("الهدف للرسم", key="nt_in_v3")
+    nt = st.text_input("الهدف للرسم", key="nt_in_v4")
     if st.button("رسم خريطة الشبكة"):
         st.image(network_mapper.map_network(nt, st.session_state.get("subs", {})))
 
 # 15. التهديدات
 with tabs[15]:
-    tt = st.text_input("الهدف للتحليل", key="tt_in_v3")
+    tt = st.text_input("الهدف للتحليل", key="tt_in_v4")
     if st.button("تحليل التهديدات"):
         st.markdown(ai_threat.analyze_threat(tt))
 
 # 16. خطة الاختراق
 with tabs[16]:
-    pt_plan = st.text_input("الهدف للخطة", key="pt_plan_v3")
+    pt_plan = st.text_input("الهدف للخطة", key="pt_plan_v4")
     if st.button("توليد خطة الاختراق"):
         st.markdown(ai_pentest.pentest_advice(pt_plan, [], ""))
 
