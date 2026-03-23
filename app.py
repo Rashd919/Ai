@@ -234,19 +234,36 @@ with tabs[4]:
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### 🔍 تحديد موقع IP (IP-API.com)")
-        ip_in = st.text_input("عنوان IP", key="ip_in_v5")
-        if st.button("تحديد موقع IP"):
-            with st.spinner("جاري جلب معلومات الموقع..."):
-                try:
-                    result = ip_tracker.get_ip_geolocation(ip_in)
-                    if "error" in result:
-                        st.error(f"❌ {result['error']}")
-                    else:
-                        st.success("✅ تم جلب المعلومات بنجاح")
-                        st.json(result)
-                except Exception as e:
-                    st.error(f"❌ خطأ: {str(e)}")
+        st.markdown("#### 🔍 تحديد موقع IP (Batch API)")
+        st.info("يمكنك إدخال عنوان IP واحد أو عدة عناوين مفصولة بفواصل (مثل: 8.8.8.8, 1.1.1.1)")
+        ip_input = st.text_area("عناوين IP", key="ip_in_v5", height=100)
+        if st.button("بحث عن الموقع"):
+            if ip_input.strip():
+                with st.spinner("جاري جلب معلومات المواقع..."):
+                    try:
+                        ip_list = [ip.strip() for ip in ip_input.split(',')]
+                        results = ip_tracker.get_ip_geolocation(ip_list)
+                        
+                        if results:
+                            st.success("✅ تم جلب المعلومات بنجاح")
+                            
+                            import pandas as pd
+                            df = pd.DataFrame(results)
+                            st.dataframe(df, use_container_width=True)
+                            
+                            csv = df.to_csv(index=False, encoding='utf-8-sig')
+                            st.download_button(
+                                label="تحميل النتائج (CSV)",
+                                data=csv,
+                                file_name="ip_geolocation_results.csv",
+                                mime="text/csv"
+                            )
+                        else:
+                            st.error("❌ لم يتم الحصول على نتائج")
+                    except Exception as e:
+                        st.error(f"❌ خطأ: {str(e)}")
+            else:
+                st.warning("⚠️ يرجى إدخال عنوان IP على الأقل")
             
     with col2:
         st.markdown("#### ℹ️ معلومات إضافية")
