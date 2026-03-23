@@ -17,27 +17,35 @@ def get_ip_geolocation(ip_addresses):
         return []
 
     api_key = config.IP_API_KEY
-    params = {"lang": "ar"}
-
-    if api_key:
-        # استخدام النسخة الاحترافية إذا توفر مفتاح API
-        base_url_single = "https://pro.ip-api.com/json/"
-        base_url_batch = "https://pro.ip-api.com/batch"
-        params["key"] = api_key
-    else:
-        # استخدام النسخة المجانية
-        base_url_single = "http://ip-api.com/json/"
-        base_url_batch = "http://ip-api.com/batch"
-
     results = []
-    try:
-        if len(cleaned_ip_addresses) == 1:
-            # طلب فردي لعنوان IP واحد
-            ip = cleaned_ip_addresses[0]
-            response = requests.get(f"{base_url_single}{ip}", params=params)
+
+    for ip in cleaned_ip_addresses:
+        # محاولة الاتصال عبر HTTPS أولاً، ثم HTTP إذا فشل
+        base_url_https = f"https://pro.ip-api.com/json/{ip}" if api_key else f"https://ip-api.com/json/{ip}"
+        base_url_http = f"http://ip-api.com/json/{ip}"
+        
+        params = {"lang": "ar"}
+        if api_key:
+            params["key"] = api_key
+
+        data = None
+        try:
+            # محاولة HTTPS
+            response = requests.get(base_url_https, params=params, timeout=5)
             response.raise_for_status()
             data = response.json()
-            if data and data.get("status") == "success":
+        except (requests.exceptions.RequestException, json.JSONDecodeError):
+            # إذا فشل HTTPS، محاولة HTTP
+            try:
+                response = requests.get(base_url_http, params=params, timeout=5)
+                response.raise_for_status()
+                data = response.json()
+            except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+                results.append({"error": f"فشل الاتصال بـ IP-API.com لـ {ip}: {e}"})
+                continue
+        
+        if data:
+            if data.get("status") == "success":
                 results.append({
                     "عنوان IP": data.get("query"),
                     "الدولة": data.get("country"),
@@ -52,39 +60,11 @@ def get_ip_geolocation(ip_addresses):
                     "المنظمة": data.get("org"),
                     "AS": data.get("as"),
                 })
-            elif data and data.get("status") == "fail":
-                results.append({"error": data.get("message", "فشل في جلب معلومات IP.")})
+            elif data.get("status") == "fail":
+                results.append({"error": f"فشل جلب معلومات IP لـ {ip}: {data.get('message', 'خطأ غير معروف')}"})
             else:
-                results.append({"error": "استجابة غير متوقعة من IP-API.com"})
+                results.append({"error": f"استجابة غير متوقعة من IP-API.com لـ {ip}"})
         else:
-            # طلب جماعي لعدة عناوين IP
-            response = requests.post(base_url_batch, json=cleaned_ip_addresses, params=params)
-            response.raise_for_status()
-            data = response.json()
-            for item in data:
-                if item and item.get("status") == "success":
-                    results.append({
-                        "عنوان IP": item.get("query"),
-                        "الدولة": item.get("country"),
-                        "رمز الدولة": item.get("countryCode"),
-                        "المنطقة": item.get("regionName"),
-                        "المدينة": item.get("city"),
-                        "الرمز البريدي": item.get("zip"),
-                        "خط العرض": item.get("lat"),
-                        "خط الطول": item.get("lon"),
-                        "المنطقة الزمنية": item.get("timezone"),
-                        "مزود الخدمة": item.get("isp"),
-                        "المنظمة": item.get("org"),
-                        "AS": item.get("as"),
-                    })
-                elif item and item.get("status") == "fail":
-                    results.append({"error": item.get("message", "فشل في جلب معلومات IP.")})
-                else:
-                    results.append({"error": "استجابة غير متوقعة من IP-API.com"})
-        return results
-    except requests.exceptions.RequestException as e:
-        return [{"error": f"خطأ في الاتصال بـ IP-API.com: {e}"}]
-    except json.JSONDecodeError:
-        return [{"error": "فشل في تحليل استجابة JSON من IP-API.com"}]
-    except Exception as e:
-        return [{"error": f"حدث خطأ غير متوقع: {e}"}]
+            results.append({"error": f"لم يتم استلام بيانات من IP-API.com لـ {ip}"})
+
+    return results
