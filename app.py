@@ -244,15 +244,16 @@ with tabs[4]:
                         ip_list = [ip.strip() for ip in ip_input.split(',')]
                         results = ip_tracker.get_ip_geolocation(ip_list)
                         
-                        if results:
+                        if results and isinstance(results, list) and len(results) > 0:
                             st.success("✅ تم جلب المعلومات بنجاح")
                             
                             import pandas as pd
-                            # تحويل النتائج إلى جدول بشكل آمن
-                            if isinstance(results, list) and len(results) > 0:
+                            try:
+                                # تحويل النتائج إلى جدول
                                 df = pd.DataFrame(results)
                                 st.dataframe(df, use_container_width=True)
                                 
+                                # تحميل النتائج كـ CSV
                                 csv = df.to_csv(index=False, encoding='utf-8-sig')
                                 st.download_button(
                                     label="تحميل النتائج (CSV)",
@@ -260,8 +261,14 @@ with tabs[4]:
                                     file_name="ip_geolocation_results.csv",
                                     mime="text/csv"
                                 )
-                            else:
-                                st.warning("⚠️ لا توجد نتائج لعرضها")
+                            except Exception as e:
+                                # إذا فشل الجدول، عرض البيانات الخام
+                                st.warning(f"⚠️ لم يتمكن من عرض الجدول: {str(e)}")
+                                st.json(results)
+                        else:
+                            st.error("❌ لم يتم الحصول على نتائج صحيحة")
+                            if results:
+                                st.json(results)
                         else:
                             st.error("❌ لم يتم الحصول على نتائج")
                     except Exception as e:
