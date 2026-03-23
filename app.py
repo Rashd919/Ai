@@ -269,8 +269,6 @@ with tabs[4]:
                             st.error("❌ لم يتم الحصول على نتائج صحيحة")
                             if results:
                                 st.json(results)
-                        else:
-                            st.error("❌ لم يتم الحصول على نتائج")
                     except Exception as e:
                         st.error(f"❌ خطأ: {str(e)}")
             else:
