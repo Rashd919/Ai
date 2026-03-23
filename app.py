@@ -248,16 +248,20 @@ with tabs[4]:
                             st.success("✅ تم جلب المعلومات بنجاح")
                             
                             import pandas as pd
-                            df = pd.DataFrame(results)
-                            st.dataframe(df, use_container_width=True)
-                            
-                            csv = df.to_csv(index=False, encoding='utf-8-sig')
-                            st.download_button(
-                                label="تحميل النتائج (CSV)",
-                                data=csv,
-                                file_name="ip_geolocation_results.csv",
-                                mime="text/csv"
-                            )
+                            # تحويل النتائج إلى جدول بشكل آمن
+                            if isinstance(results, list) and len(results) > 0:
+                                df = pd.DataFrame(results)
+                                st.dataframe(df, use_container_width=True)
+                                
+                                csv = df.to_csv(index=False, encoding='utf-8-sig')
+                                st.download_button(
+                                    label="تحميل النتائج (CSV)",
+                                    data=csv,
+                                    file_name="ip_geolocation_results.csv",
+                                    mime="text/csv"
+                                )
+                            else:
+                                st.warning("⚠️ لا توجد نتائج لعرضها")
                         else:
                             st.error("❌ لم يتم الحصول على نتائج")
                     except Exception as e:
