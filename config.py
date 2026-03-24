@@ -37,5 +37,5 @@ IP_API_KEY = get_key("IP_API_KEY")
 VICTIMS_FILE_PATH = "victims.json"
 
 # إعدادات نظام تسجيل الدخول
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "Rashd919")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "Rashd@")
+ADMIN_USERNAME = "Rashd919"
+ADMIN_PASSWORD = "Rashd@"
