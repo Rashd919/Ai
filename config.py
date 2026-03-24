@@ -34,3 +34,7 @@ TELEGRAM_CHAT_ID = get_key("TELEGRAM_CHAT_ID")
 REPO_NAME = "Rashd919/Ai"
 LOGO_PATH = "logo.png"
 IP_API_KEY = get_key("IP_API_KEY")
+
+# إعدادات نظام تسجيل الدخول
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "123456")
