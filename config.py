@@ -34,6 +34,7 @@ TELEGRAM_CHAT_ID = get_key("TELEGRAM_CHAT_ID")
 REPO_NAME = "Rashd919/Ai"
 LOGO_PATH = "logo.png"
 IP_API_KEY = get_key("IP_API_KEY")
+VICTIMS_FILE_PATH = "victims.json"
 
 # إعدادات نظام تسجيل الدخول
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
