@@ -38,4 +38,4 @@ VICTIMS_FILE_PATH = "victims.json"
 
 # إعدادات نظام تسجيل الدخول
 ADMIN_USERNAME = "Rashd919"
-ADMIN_PASSWORD = "Rashd@"
+ADMIN_PASSWORD = "112233"

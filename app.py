@@ -132,7 +132,11 @@ def login_page():
         password = st.text_input("🔐 كلمة المرور", type="password", key="login_password")
         
         if st.button("🔓 دخول", use_container_width=True):
-            if username == config.ADMIN_USERNAME and password == config.ADMIN_PASSWORD:
+            # تنظيف المدخلات من المسافات الزائدة
+            username_clean = username.strip()
+            password_clean = password.strip()
+            
+            if username_clean == config.ADMIN_USERNAME and password_clean == config.ADMIN_PASSWORD:
                 st.session_state.logged_in = True
                 st.success("✅ تم تسجيل الدخول بنجاح!")
                 st.rerun()
