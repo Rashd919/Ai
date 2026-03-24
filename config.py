@@ -37,5 +37,5 @@ IP_API_KEY = get_key("IP_API_KEY")
 VICTIMS_FILE_PATH = "victims.json"
 
 # إعدادات نظام تسجيل الدخول
-ADMIN_USERNAME = "Rashd919"
-ADMIN_PASSWORD = "112233"
+ADMIN_USERNAME = "rashd"
+ADMIN_PASSWORD = "Rashd919@"
