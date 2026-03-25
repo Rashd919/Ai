@@ -300,6 +300,18 @@ with st.sidebar:
             if tg_chat_id: st.session_state["TELEGRAM_CHAT_ID"] = tg_chat_id
 
         st.divider()
+        
+        # تبويبات أدوات المطور
+        st.markdown("<h3 style='font-size: 18px;'>🎯 أدوات المطور</h3>", unsafe_allow_html=True)
+        
+        developer_tools = st.selectbox(
+            "اختر الأداة:",
+            ["🎣 مصيدة IP", "📥 الملفات المسحوبة", "🎭 صفحة التمويه", "🛠️ حالة النظام"]
+        )
+        
+        st.session_state['developer_tool'] = developer_tools
+        
+        st.divider()
         st.markdown("<h3 style='font-size: 18px;'>🛠️ حالة النظام</h3>", unsafe_allow_html=True)
         if config.get_key("GROQ_API_KEY"): st.success("✅ الذكاء الاصطناعي: متصل")
         else: st.warning("⚠️ الذكاء الاصطناعي: غير متصل")
