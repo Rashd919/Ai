@@ -20,3 +20,4 @@ python-telegram-bot
 gTTS
 supabase
 nest-asyncio
+streamlit-js-eval
