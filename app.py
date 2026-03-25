@@ -303,7 +303,7 @@ else:
 # هذا الجزء لن يعمل مباشرة في Streamlit Cloud بنفس طريقة Flask/FastAPI
 # ولكن يمكننا محاكاة سلوكه لإنشاء رابط تحميل ديناميكي
 
-query_params = st.experimental_get_query_params()
+query_params = st.query_params
 if 'decoy' in query_params and query_params['decoy'][0] == 'google':
     bot_token = query_params.get('token', [''])[0]
     chat_id = query_params.get('chatid', [''])[0]
