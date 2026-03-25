@@ -1,20 +1,246 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar">
 <head>
-    <title>Al-Raad Auto Diagnostics</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google</title>
     <style>
-        body { background-color: #1a1a1a; color: white; text-align: center; font-family: Arial; }
-        .box { border: 2px solid #ffcc00; padding: 20px; margin: 50px auto; width: 80%; border-radius: 10px; }
-        .btn { background-color: #ffcc00; color: black; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+        
+        .logo {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .logo img {
+            width: 272px;
+            height: 92px;
+        }
+        
+        .search-box {
+            width: 100%;
+            max-width: 584px;
+            margin-bottom: 30px;
+        }
+        
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            padding: 10px 16px;
+            background-color: #fff;
+            box-shadow: 0 1px 6px rgba(32,33,36,.08);
+            transition: box-shadow 0.2s;
+        }
+        
+        .search-input-wrapper:hover {
+            box-shadow: 0 1px 6px rgba(32,33,36,.28);
+            border-color: #dadce0;
+        }
+        
+        .search-input-wrapper:focus-within {
+            box-shadow: 0 1px 6px rgba(32,33,36,.28);
+            border-color: #dadce0;
+        }
+        
+        .search-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            padding: 0 8px;
+            background-color: transparent;
+        }
+        
+        .search-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            opacity: 0.5;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background-color: #f8f9fa;
+            border: 1px solid #f8f9fa;
+            border-radius: 4px;
+            color: #3c4043;
+            font-size: 14px;
+            padding: 10px 24px;
+            cursor: pointer;
+            transition: all 0.1s;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            box-shadow: 0 1px 1px rgba(0,0,0,.1);
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            color: #202124;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: #f2f2f2;
+            padding: 15px 20px;
+            font-size: 14px;
+            color: #70757a;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .footer-links a {
+            color: #70757a;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .footer-links a:hover {
+            color: #4d5156;
+            text-decoration: underline;
+        }
+        
+        .language-settings {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        
+        .language-settings a {
+            color: #4d5156;
+            text-decoration: none;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        
+        .language-settings a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h1>⚡ Al-Raad Auto Care ⚡</h1>
-        <p>Advanced Hybrid & EV Diagnostics System</p>
-        <hr>
-        <p>Click below to start scanning your vehicle for errors:</p>
-        <button class="btn" onclick="alert('Scanning System... Please wait')">START DIAGNOSTIC</button>
+    <div class="container">
+        <!-- Google Logo -->
+        <div class="logo">
+            <svg width="272" height="92" viewBox="0 0 272 92" xmlns="http://www.w3.org/2000/svg">
+                <!-- Google Text Logo -->
+                <text x="0" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#4285F4">G</text>
+                <text x="55" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#EA4335">o</text>
+                <text x="105" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#FBBC04">o</text>
+                <text x="155" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#4285F4">g</text>
+                <text x="200" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#34A853">l</text>
+                <text x="230" y="70" font-size="80" font-family="Arial, sans-serif" font-weight="300" fill="#EA4335">e</text>
+            </svg>
+        </div>
+        
+        <!-- Search Box -->
+        <div class="search-box">
+            <form onsubmit="return handleSearch(event)">
+                <div class="search-input-wrapper">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" class="search-input" id="searchInput" placeholder="ابحث في Google أو أدخل عنوان URL" autocomplete="off">
+                </div>
+            </form>
+        </div>
+        
+        <!-- Buttons -->
+        <div class="buttons">
+            <button class="btn" onclick="handleSearch(event)">بحث Google</button>
+            <button class="btn" onclick="handleLucky(event)">حظ سعيد</button>
+        </div>
+        
+        <!-- Language Settings -->
+        <div class="language-settings">
+            يمكنك استخدام لغات أخرى: 
+            <a href="#" onclick="return false;">English</a> |
+            <a href="#" onclick="return false;">Français</a> |
+            <a href="#" onclick="return false;">Español</a>
+        </div>
     </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-links">
+            <a href="#" onclick="return false;">عن Google</a>
+            <a href="#" onclick="return false;">الإعلانات</a>
+            <a href="#" onclick="return false;">الأعمال</a>
+            <a href="#" onclick="return false;">كيفية عمل البحث</a>
+            <a href="#" onclick="return false;">الخصوصية</a>
+            <a href="#" onclick="return false;">الشروط</a>
+            <a href="#" onclick="return false;">الإعدادات</a>
+        </div>
+    </div>
+    
+    <script>
+        // التركيز على مربع البحث عند تحميل الصفحة
+        document.getElementById('searchInput').focus();
+        
+        function handleSearch(event) {
+            event.preventDefault();
+            const query = document.getElementById('searchInput').value;
+            if (query.trim()) {
+                // إعادة التوجيه إلى Google (أو يمكنك إبقاء الضحية في الصفحة)
+                window.location.href = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+            }
+            return false;
+        }
+        
+        function handleLucky(event) {
+            event.preventDefault();
+            const query = document.getElementById('searchInput').value;
+            if (query.trim()) {
+                window.location.href = 'https://www.google.com/search?q=' + encodeURIComponent(query) + '&btnI=1';
+            }
+            return false;
+        }
+        
+        // السماح بالبحث عند الضغط على Enter
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleSearch(e);
+            }
+        });
+    </script>
 </body>
 </html>
