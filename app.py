@@ -161,12 +161,11 @@ with st.sidebar:
         ).strip()
         
         if st.button("💾 حفظ الإعدادات"):
-            if telegram_bot_token and telegram_chat_id:
-                config.set_key("TELEGRAM_BOT_TOKEN", telegram_bot_token)
-                config.set_key("TELEGRAM_CHAT_ID", telegram_chat_id)
-                st.success("✅ تم حفظ الإعدادات")
-            else:
-                st.error("❌ يجب ملء جميع الحقول")
+    if telegram_bot_token and telegram_chat_id:
+        st.success("✅ الإعدادات محفوظة في Secrets (لا تحتاج حفظ يدوي)")
+        st.info("تم استخدام st.secrets تلقائياً")
+    else:
+        st.error("❌ يجب ملء جميع الحقول")
         
         st.markdown("---")
         
