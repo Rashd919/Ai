@@ -26,7 +26,9 @@ class AIHackingAssistant:
                 return chat_completion.choices[0].message.content
             except Exception as e:
                 if "organization_restricted" in str(e).lower() or "400" in str(e):
-                    pass # الانتقال لـ Gemini في حال وجود قيود على Groq
+                    # الانتقال لـ Gemini في حال وجود قيود على Groq
+                    # لا نرجع الخطأ هنا، بل نترك الكود يكمل لـ Gemini
+                    pass
                 else:
                     return f"❌ خطأ في Groq: {str(e)}"
 
@@ -42,9 +44,11 @@ class AIHackingAssistant:
                 result = response.json()
                 return result['candidates'][0]['content']['parts'][0]['text']
             except Exception as ge:
+                return f"❌ خطأ في الاتصال بـ Gemini: {str(ge)}"
+            except Exception as ge:
                 return f"❌ خطأ في الاتصال بكافة المحركات: {str(ge)}"
         
-        return "⚠️ خطأ: لا توجد مفاتيح API صالحة للذكاء الاصطناعي."
+        return "⚠️ خطأ: لا توجد مفاتيح API صالحة للذكاء الاصطناعي أو كلاهما مقيد."
 
     def analyze_target(self, domain, open_ports=None, tech=None, headers=None):
         api_key = config.get_key("GROQ_API_KEY")

