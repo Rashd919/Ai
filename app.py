@@ -70,7 +70,7 @@ def get_image_as_base64(path):
     /* تأكد من إظهار الشريط الجانبي */
     .stSidebar { display: block !important; }
     </style>
-    """, unsafe_allow_html=True)}, {
+    """, unsafe_allow_html=True)
 
 # دالة جلب الـ IP العام
 def get_real_public_ip():
