@@ -55,6 +55,20 @@ st.markdown("""
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .stApp [data-testid="stToolbar"] {display: none;}
+    /* تحسين شكل التبويبات */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #1e293b;
+        border-radius: 5px 5px 0px 0px;
+        color: white;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #ff4b4b !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -117,17 +131,47 @@ if not st.session_state.authenticated:
             else: st.error("Error")
     st.stop()
 
-# القائمة الجانبية
+# القائمة الجانبية (Sidebar)
 with st.sidebar:
+    st.image("https://img.icons8.com/fluency/96/shield.png", width=80)
     st.title("🛡️ Rashd_Ai Pro")
-    menu = st.radio("Menu", ["📊 Dashboard", "🔍 OSINT", "🛡️ Security", "🧠 AI Tools", "🎯 Traps", "⚙️ Settings"])
+    st.markdown("---")
+    
+    st.subheader("🔑 API Keys")
+    groq_key = st.text_input("Groq API Key", value=config.get_key("GROQ_API_KEY"), type="password")
+    gemini_key = st.text_input("Gemini API Key", value=config.get_key("GEMINI_API_KEY"), type="password")
+    tavily_key = st.text_input("Tavily API Key", value=config.get_key("TAVILY_API_KEY"), type="password")
+    tg_token = st.text_input("Telegram Token", value=config.get_key("TELEGRAM_BOT_TOKEN"), type="password")
+    tg_chat = st.text_input("Telegram Chat ID", value=config.get_key("TELEGRAM_CHAT_ID"))
+    
+    if st.button("Save Keys"):
+        config.set_key("GROQ_API_KEY", groq_key)
+        config.set_key("GEMINI_API_KEY", gemini_key)
+        config.set_key("TAVILY_API_KEY", tavily_key)
+        config.set_key("TELEGRAM_BOT_TOKEN", tg_token)
+        config.set_key("TELEGRAM_CHAT_ID", tg_chat)
+        st.success("Keys Saved!")
+        st.rerun()
+        
+    st.markdown("---")
     if st.button("Logout"):
         st.session_state.authenticated = False
         st.rerun()
 
+# الواجهة الرئيسية باستخدام التبويبات (Tabs)
+st.header("🛡️ Rashd_Ai Security Platform")
+
+tabs = st.tabs([
+    "📊 Dashboard", 
+    "🔍 OSINT", 
+    "🛡️ Security", 
+    "🧠 AI Tools", 
+    "🎯 Traps", 
+    "⚙️ Settings"
+])
+
 # 1. Dashboard
-if menu == "📊 Dashboard":
-    st.header("📊 Dashboard")
+with tabs[0]:
     victims = victim_logger.get_all_victims()
     c1, c2, c3 = st.columns(3)
     c1.metric("Victims", len(victims))
@@ -137,7 +181,7 @@ if menu == "📊 Dashboard":
     st.subheader("💬 Rashd_Ai Assistant")
     if "messages" not in st.session_state: st.session_state.messages = []
     
-    # استخدام حاوية ثابتة الارتفاع للمحادثة (Streamlit Native Container)
+    # حاوية ثابتة الارتفاع للمحادثة
     with st.container(height=400):
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
@@ -148,8 +192,11 @@ if menu == "📊 Dashboard":
         with st.chat_message("user"): st.markdown(prompt)
         with st.chat_message("assistant"):
             try:
-                response = AIHackingAssistant().chat(prompt)
-            except: response = "❌ خطأ في الاتصال بالذكاء الاصطناعي."
+                # محاولة الاتصال بالذكاء الاصطناعي مع معالجة الخطأ
+                assistant = AIHackingAssistant()
+                response = assistant.chat(prompt)
+            except Exception as e:
+                response = f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {str(e)}"
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.rerun()
@@ -158,52 +205,52 @@ if menu == "📊 Dashboard":
     if victims: st.table(victims[:5])
 
 # 2. OSINT
-elif menu == "🔍 OSINT":
+with tabs[1]:
     st.header("🔍 OSINT Tools")
-    tabs = st.tabs(["🌐 Domain", "👤 User", "📧 Email", "📱 Phone"])
-    with tabs[0]:
+    o_tabs = st.tabs(["🌐 Domain", "👤 User", "📧 Email", "📱 Phone"])
+    with o_tabs[0]:
         d = st.text_input("Domain")
         if st.button("Scan Domain"):
             try: st.write(domain_osint.whois_lookup(d))
             except: st.error("Error")
-    with tabs[1]:
+    with o_tabs[1]:
         u = st.text_input("User")
         if st.button("Search User"):
             try: st.write(username_osint.username_search(u))
             except: st.error("Error")
-    with tabs[2]:
+    with o_tabs[2]:
         e = st.text_input("Email")
         if st.button("Search Email"):
             try: st.write(email_osint.search_email(e))
             except: st.error("Error")
-    with tabs[3]:
+    with o_tabs[3]:
         p = st.text_input("Phone")
         if st.button("Lookup Phone"):
             try: st.write(phone_osint.lookup(p))
             except: st.error("Error")
 
 # 3. Security
-elif menu == "🛡️ Security":
+with tabs[2]:
     st.header("🛡️ Security Tools")
-    tabs = st.tabs(["🔍 Web", "🔌 Ports", "⚠️ Vulns"])
-    with tabs[0]:
+    s_tabs = st.tabs(["🔍 Web", "🔌 Ports", "⚠️ Vulns"])
+    with s_tabs[0]:
         u = st.text_input("URL")
         if st.button("Scan Web"):
             try: st.write(website_scan.detect_tech(u))
             except: st.error("Error")
-    with tabs[1]:
+    with s_tabs[1]:
         i = st.text_input("IP")
         if st.button("Scan Ports"):
             try: st.write(port_scanner.scan(i))
             except: st.error("Error")
-    with tabs[2]:
+    with s_tabs[2]:
         i = st.text_input("Target")
         if st.button("Scan Vulns"):
             try: st.write(vuln_scanner.scan(i))
             except: st.error("Error")
 
 # 4. AI Tools
-elif menu == "🧠 AI Tools":
+with tabs[3]:
     st.header("🧠 AI Security")
     data = st.text_area("Data")
     if st.button("Analyze"):
@@ -211,14 +258,14 @@ elif menu == "🧠 AI Tools":
         except: st.error("Error")
 
 # 5. Traps
-elif menu == "🎯 Traps":
+with tabs[4]:
     st.header("🎯 Traps")
     tid = st.text_input("Trap ID", value="Google_Trap")
     st.code(f"https://rashdai.streamlit.app/?decoy=google&trap={tid}")
     if st.button("Refresh"): st.table(victim_logger.get_all_victims())
 
 # 6. Settings
-elif menu == "⚙️ Settings":
+with tabs[5]:
     st.header("⚙️ Settings")
     st.success("API Keys Active.")
-    st.info("Version: 3.1.0 (Reverted & Fixed)")
+    st.info("Version: 3.2.0 (Tabs & Sidebar Keys Edition)")
