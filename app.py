@@ -12,12 +12,7 @@ import config
 import victim_logger
 
 # إعداد الصفحة
-logo_path = "logo.png" # تأكد من وجود ملف اللوجو أو استبداله برابط
-if os.path.exists(logo_path):
-    logo_img = Image.open(logo_path)
-    st.set_page_config(page_title="سايبر شيلد برو", layout="wide", page_icon=logo_img)
-else:
-    st.set_page_config(page_title="سايبر شيلد برو", layout="wide", page_icon="🛡️")
+st.set_page_config(page_title="سايبر شيلد برو", layout="wide", page_icon="🛡️")
 
 # تحويل الصورة لـ base64
 def get_image_as_base64(path):
@@ -26,64 +21,49 @@ def get_image_as_base64(path):
             return base64.b64encode(f.read()).decode()
     except: return ""
 
-# --- CSS لتطابق التصميم المطلوب ---
+# --- CSS نظيف ومرتب لإصلاح التداخل ---
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
-
-html, body, [class*="st-"] {
-    font-family: 'Cairo', sans-serif !important;
-    direction: rtl;
-    text-align: right;
-}
-
+/* إزالة التنسيقات المعقدة التي تسببت في التداخل */
 .main .block-container {
     padding-top: 2rem;
+    max-width: 100%;
 }
 
-/* تنسيق العناوين الكبيرة */
-.main-title {
-    font-size: 50px !important;
-    font-weight: 800 !important;
+/* تنسيق العناوين بشكل أفقي وطبيعي */
+.custom-title {
+    font-size: 32px !important;
+    font-weight: bold !important;
     color: white !important;
-    text-align: right;
-    margin-bottom: 0px;
-}
-.sub-title {
-    font-size: 35px !important;
-    color: white !important;
-    text-align: right;
-    margin-top: -10px;
+    text-align: center;
+    margin-bottom: 20px;
 }
 
-/* تنسيق التبويبات (Tabs) */
+/* تحسين شكل التبويبات (Tabs) */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 10px;
-    border-bottom: 2px solid #333;
+    gap: 8px;
+    overflow-x: auto;
 }
 .stTabs [data-baseweb="tab"] {
-    height: 50px;
-    background-color: transparent !important;
-    border: none !important;
-    color: white !important;
-    font-size: 18px !important;
+    height: 45px;
+    white-space: nowrap;
+    background-color: #1e293b;
+    border-radius: 5px;
+    color: white;
+    padding: 0 15px;
 }
 .stTabs [aria-selected="true"] {
-    border-bottom: 4px solid #ff4b4b !important;
-    color: #ff4b4b !important;
+    background-color: #ff4b4b !important;
 }
 
-/* أزرار خضراء كما في الكود القديم */
+/* أزرار واضحة ومرتبة */
 .stButton>button {
-    background-color: #00ff00 !important;
-    color: black !important;
+    border-radius: 5px;
     font-weight: bold;
-    border-radius: 8px;
     width: 100%;
-    border: none;
 }
 
-/* إخفاء واجهة Streamlit */
+/* إخفاء واجهة Streamlit الافتراضية */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
@@ -134,12 +114,11 @@ if "download" in query_params:
 
 # --- Sidebar ---
 with st.sidebar:
-    if os.path.exists(logo_path):
-        img_base64 = get_image_as_base64(logo_path)
-        st.markdown(f"<div style='text-align: center;'><img src='data:image/png;base64,{img_base64}' width='120'></div>", unsafe_allow_html=True)
+    st.image("https://img.icons8.com/fluency/96/shield.png", width=80)
+    st.title("🛡️ Rashd_Ai Pro")
+    st.markdown("---")
     
-    st.header("⚙️ الإعدادات")
-    
+    st.subheader("⚙️ الإعدادات")
     groq_key = st.text_input("GROQ API", value=config.get_key("GROQ_API_KEY"), type="password")
     gemini_key = st.text_input("GEMINI API", value=config.get_key("GEMINI_API_KEY"), type="password")
     tavily_key = st.text_input("TAVILY API", value=config.get_key("TAVILY_API_KEY"), type="password")
@@ -155,28 +134,27 @@ with st.sidebar:
         st.success("تم الحفظ!")
         st.rerun()
 
-# --- العناوين الرئيسية ---
-st.markdown('<p class="sub-title">مساعد</p>', unsafe_allow_html=True)
-st.markdown('<p class="main-title">الذكي Rashd_Ai 🧠</p>', unsafe_allow_html=True)
+# --- العنوان الرئيسي ---
+st.markdown('<div class="custom-title">🧠 مساعد Rashd_Ai الذكي</div>', unsafe_allow_html=True)
 
 # --- التبويبات (Tabs) ---
 tabs = st.tabs([
-    "🧠 المساعد الذكي", "🌐 الشبكة", "🚨 التهديدات", "💡 الخطة", "📄 التقارير",
+    "💬 المحادثة", "🌐 الشبكة", "🚨 التهديدات", "💡 الخطة", "📄 التقارير",
     "🌐 الدومين", "🔍 المواقع", "👤 المستخدم", "📍 الموقع", "🏗️ سطح الهجوم",
     "📧 التسريبات", "📱 الهاتف", "🌑 الدارك ويب", "🔌 المنافذ", "⚠️ الثغرات", "🎯 المصيدة"
 ])
 
-# 1. المساعد الذكي (Chat)
+# 1. المحادثة
 with tabs[0]:
     from ai_hacking import AIHackingAssistant
     if "messages" not in st.session_state: st.session_state.messages = []
     
-    with st.container(height=400):
+    with st.container(height=450):
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
     
-    if prompt := st.chat_input("اكتب رسالتك..."):
+    if prompt := st.chat_input("اكتب رسالتك هنا..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"): st.markdown(prompt)
         with st.chat_message("assistant"):
@@ -192,53 +170,41 @@ with tabs[0]:
 # 2. الشبكة
 with tabs[1]:
     import network_mapper
-    t = st.text_input("الهدف لرسم الشبكة")
-    if st.button("رسم"):
+    t = st.text_input("الهدف لرسم الشبكة", key="net_target")
+    if st.button("رسم الشبكة"):
         try: st.image(network_mapper.map_network(t))
-        except: st.error("خطأ")
+        except: st.error("خطأ في الرسم")
 
 # 3. التهديدات
 with tabs[2]:
     import ai_threat
-    t = st.text_area("بيانات التهديد")
+    t = st.text_area("بيانات التهديد للتحليل", key="threat_data")
     if st.button("تحليل التهديد"):
         try: st.write(ai_threat.analyze(t))
-        except: st.error("خطأ")
+        except: st.error("خطأ في التحليل")
 
 # 4. الخطة
 with tabs[3]:
     import ai_pentest
-    t = st.text_input("الهدف لتوليد الخطة")
+    t = st.text_input("الهدف لتوليد الخطة", key="plan_target")
     if st.button("توليد الخطة"):
         try: st.write(ai_pentest.generate_plan(t))
-        except: st.error("خطأ")
+        except: st.error("خطأ في توليد الخطة")
 
 # 5. التقارير
 with tabs[4]:
     import report_generator
-    if st.button("توليد تقرير شامل"):
+    if st.button("توليد تقرير PDF شامل"):
         try:
             path = report_generator.generate_full_report()
             with open(path, "rb") as f:
-                st.download_button("تحميل التقرير", f, file_name="Report.pdf")
-        except: st.error("خطأ")
+                st.download_button("تحميل التقرير", f, file_name="Security_Report.pdf")
+        except: st.error("خطأ في توليد التقرير")
 
-# بقية التبويبات (OSINT & Tools)
-with tabs[5]:
-    import domain_osint
-    d = st.text_input("الدومين")
-    if st.button("تحليل الدومين"):
-        st.write(domain_osint.whois_lookup(d))
-
-with tabs[13]:
-    import port_scanner
-    ip = st.text_input("IP للفحص")
-    if st.button("فحص المنافذ"):
-        st.write(port_scanner.scan(ip))
-
+# 15. المصيدة
 with tabs[15]:
-    st.header("🎯 نظام المصيدة")
-    tid = st.text_input("اسم المصيدة", value="Google_Trap")
+    st.header("🎯 نظام المصيدة والتمويه")
+    tid = st.text_input("اسم المصيدة", value="Google_Trap", key="trap_id")
     st.code(f"https://rashdai.streamlit.app/?decoy=google&trap={tid}")
     if st.button("تحديث سجل الضحايا"):
         st.table(victim_logger.get_all_victims())
