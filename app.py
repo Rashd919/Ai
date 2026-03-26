@@ -48,22 +48,19 @@ st.markdown("""
 def get_real_ip():
     """جلب عنوان IP الحقيقي للزائر من ترويسات Streamlit"""
     try:
-        from streamlit.web.server.websocket_headers import _get_websocket_headers
-        headers = _get_websocket_headers()
+        # استخدام st.context.headers بدلاً من الطريقة القديمة لتجنب التحذيرات
+        headers = st.context.headers
         if headers:
-            # الترويسات الشائعة لـ IP الزائر خلف البروكسي في Streamlit Cloud
             ip = headers.get("X-Forwarded-For")
             if ip:
-                # أحياناً يكون هناك أكثر من IP، نأخذ الأول
                 return ip.split(",")[0].strip()
-            
             ip = headers.get("X-Real-Ip")
             if ip:
                 return ip
     except:
         pass
     
-    # محاولة خارجية كخيار بديل (قد تعطي IP السيرفر أحياناً)
+    # محاولة خارجية كخيار بديل
     try:
         response = requests.get('https://api.ipify.org?format=json', timeout=3)
         if response.status_code == 200:
