@@ -9,24 +9,42 @@ class AIHackingAssistant:
         self.model = config.GROQ_MODEL
 
     def chat(self, user_input):
-        api_key = config.get_key("GROQ_API_KEY")
-        if not api_key:
-            return "⚠️ خطأ: GROQ_API_KEY غير موجود في الإعدادات."
+        # محاولة استخدام Groq أولاً
+        groq_key = config.get_key("GROQ_API_KEY")
+        if groq_key:
+            try:
+                client = Groq(api_key=groq_key)
+                chat_completion = client.chat.completions.create(
+                    messages=[
+                        {"role": "system", "content": "أنت Rashd_Ai، مساعد ذكي متخصص في الأمن السيبراني. إجاباتك دائماً باللغة العربية، احترافية، ومختصرة."},
+                        {"role": "user", "content": user_input}
+                    ],
+                    model=self.model,
+                    temperature=0.7,
+                    max_tokens=1000
+                )
+                return chat_completion.choices[0].message.content
+            except Exception as e:
+                if "organization_restricted" in str(e).lower() or "400" in str(e):
+                    pass # الانتقال لـ Gemini في حال وجود قيود على Groq
+                else:
+                    return f"❌ خطأ في Groq: {str(e)}"
 
-        try:
-            client = Groq(api_key=api_key)
-            chat_completion = client.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": "أنت Rashd_Ai، مساعد ذكي متخصص في الأمن السيبراني. إجاباتك دائماً باللغة العربية، احترافية، ومختصرة. ساعد المستخدم في أي استفسار أمني أو تقني."},
-                    {"role": "user", "content": user_input}
-                ],
-                model=self.model,
-                temperature=0.7,
-                max_tokens=1000
-            )
-            return chat_completion.choices[0].message.content
-        except Exception as e:
-            return f"❌ عذراً، واجه النظام مشكلة في معالجة طلبك: {str(e)}"
+        # محاولة استخدام Gemini كبديل (Fallback)
+        gemini_key = config.get_key("GEMINI_API_KEY")
+        if gemini_key:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={gemini_key}"
+                payload = {
+                    "contents": [{"parts": [{"text": f"أنت Rashd_Ai، مساعد ذكي متخصص في الأمن السيبراني. أجب باللغة العربية باحترافية واختصار على: {user_input}"}]}]
+                }
+                response = requests.post(url, json=payload, timeout=10)
+                result = response.json()
+                return result['candidates'][0]['content']['parts'][0]['text']
+            except Exception as ge:
+                return f"❌ خطأ في الاتصال بكافة المحركات: {str(ge)}"
+        
+        return "⚠️ خطأ: لا توجد مفاتيح API صالحة للذكاء الاصطناعي."
 
     def analyze_target(self, domain, open_ports=None, tech=None, headers=None):
         api_key = config.get_key("GROQ_API_KEY")

