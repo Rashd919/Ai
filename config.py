@@ -2,42 +2,22 @@ import os
 import streamlit as st
 
 def get_key(key):
-    # 1. البحث في st.session_state (الأولوية للمدخلات الحالية)
     if key in st.session_state:
         return st.session_state[key]
-
-    # 2. البحث في متغيرات البيئة (Environment Variables)
-    value = os.getenv(key)
-
-    # 3. البحث في Streamlit Secrets (لبيئة Streamlit Cloud)
-    if not value:
-        try:
-            if key in st.secrets:
-                value = st.secrets[key]
-        except:
-            pass
-
-    return value
+    try:
+        if key in st.secrets:
+            return st.secrets[key]
+    except:
+        pass
+    return os.getenv(key, "")
 
 def set_key(key, value):
-    """حفظ المفتاح في جلسة العمل الحالية"""
     st.session_state[key] = value
-    # ملاحظة: في Streamlit Cloud، لا يمكننا الكتابة في ملفات النظام بشكل دائم 
-    # لذا نعتمد على session_state أو Secrets.
+    os.environ[key] = value
 
-# إعدادات النماذج المدعومة حالياً في Groq
 GROQ_MODEL = "llama-3.3-70b-versatile" 
-
-# إعدادات إضافية للميزات الجديدة
-GITHUB_TOKEN = get_key("GITHUB_TOKEN")
-TELEGRAM_BOT_TOKEN = get_key("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = get_key("TELEGRAM_CHAT_ID")
 APP_NAME = "Rashd_Ai"
 REPO_NAME = "Rashd919/Ai"
-LOGO_PATH = "logo.png"
-IP_API_KEY = get_key("IP_API_KEY")
-VICTIMS_FILE_PATH = "victims.json"
-
-# إعدادات نظام تسجيل الدخول
 ADMIN_USERNAME = "Rashd919"
 ADMIN_PASSWORD = "112233"
+VICTIMS_FILE_PATH = "victims.json"
