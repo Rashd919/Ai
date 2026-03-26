@@ -1,31 +1,32 @@
 import os
+import streamlit as st
 
 def get_key(key):
-    # 1. البحث في متغيرات البيئة (Environment Variables)
+    # 1. البحث في st.session_state (الأولوية للمدخلات الحالية)
+    if key in st.session_state:
+        return st.session_state[key]
+
+    # 2. البحث في متغيرات البيئة (Environment Variables)
     value = os.getenv(key)
 
-    # 2. البحث في Streamlit Secrets (لبيئة Streamlit Cloud)
+    # 3. البحث في Streamlit Secrets (لبيئة Streamlit Cloud)
     if not value:
         try:
-            import streamlit as st
             if key in st.secrets:
                 value = st.secrets[key]
         except:
             pass
 
-    # 3. البحث في st.session_state (إذا قام المستخدم بإدخال المفتاح يدوياً في الواجهة)
-    if not value:
-        try:
-            import streamlit as st
-            if key in st.session_state:
-                value = st.session_state[key]
-        except:
-            pass
-
     return value
 
+def set_key(key, value):
+    """حفظ المفتاح في جلسة العمل الحالية"""
+    st.session_state[key] = value
+    # ملاحظة: في Streamlit Cloud، لا يمكننا الكتابة في ملفات النظام بشكل دائم 
+    # لذا نعتمد على session_state أو Secrets.
+
 # إعدادات النماذج المدعومة حالياً في Groq
-GROQ_MODEL = "llama-3.3-70b-versatile" # النموذج الأحدث والأكثر استقراراً
+GROQ_MODEL = "llama-3.3-70b-versatile" 
 
 # إعدادات إضافية للميزات الجديدة
 GITHUB_TOKEN = get_key("GITHUB_TOKEN")

