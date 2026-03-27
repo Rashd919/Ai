@@ -21,3 +21,4 @@ gTTS
 supabase
 nest-asyncio
 
+google-generativeai
