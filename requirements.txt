@@ -20,5 +20,3 @@ python-telegram-bot
 gTTS
 supabase
 nest-asyncio
-
-google-generativeai

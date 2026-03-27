@@ -2,7 +2,6 @@ import os
 from groq import Groq
 import json
 import config
-import google.generativeai as genai
 
 class AIHackingAssistant:
     def __init__(self):
@@ -10,38 +9,25 @@ class AIHackingAssistant:
         self.model = config.GROQ_MODEL
 
     def chat(self, user_input):
-        # محاولة استخدام Groq أولاً
+        # استخدام Groq فقط
         groq_key = config.get_key("GROQ_API_KEY")
-        if groq_key:
-            try:
-                client = Groq(api_key=groq_key)
-                chat_completion = client.chat.completions.create(
-                    messages=[
-                        {"role": "system", "content": "أنت Rashd_Ai، مساعد ذكي متخصص في الأمن السيبراني. إجاباتك دائماً باللغة العربية، احترافية، ومختصرة."},
-                        {"role": "user", "content": user_input}
-                    ],
-                    model=self.model,
-                    temperature=0.7,
-                    max_tokens=1000
-                )
-                return chat_completion.choices[0].message.content
-            except Exception as e:
-                # في حال فشل Groq لأي سبب، ننتقل إلى Gemini
-                print(f"Groq API failed: {e}. Falling back to Gemini.")
-                pass # نترك الكود يكمل لـ Gemini
-
-        # محاولة استخدام Gemini كبديل (Fallback)
-        gemini_key = config.get_key("GEMINI_API_KEY")
-        if gemini_key:
-            try:
-                genai.configure(api_key=gemini_key)
-                model = genai.GenerativeModel('gemini-pro')
-                response = model.generate_content(f"أنت Rashd_Ai، مساعد ذكي متخصص في الأمن السيبراني. أجب باللغة العربية باحترافية واختصار على: {user_input}")
-                return response.text
-            except Exception as ge:
-                return f"❌ خطأ في الاتصال بـ Gemini: {str(ge)}"
+        if not groq_key:
+            return "⚠️ خطأ: GROQ_API_KEY غير موجود."
         
-        return "⚠️ خطأ: لا توجد مفاتيح API صالحة للذكاء الاصطناعي أو كلاهما مقيد."
+        try:
+            client = Groq(api_key=groq_key)
+            chat_completion = client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": "أنت Rashd_Ai، مساعد ذكي متخصص في الأمن السيبراني. إجاباتك دائماً باللغة العربية، احترافية، ومختصرة."},
+                    {"role": "user", "content": user_input}
+                ],
+                model=self.model,
+                temperature=0.7,
+                max_tokens=1000
+            )
+            return chat_completion.choices[0].message.content
+        except Exception as e:
+            return f"❌ خطأ في Groq: {str(e)}"
 
     def analyze_target(self, domain, open_ports=None, tech=None, headers=None):
         api_key = config.get_key("GROQ_API_KEY")
