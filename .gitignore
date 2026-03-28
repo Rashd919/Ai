@@ -1,1 +1,86 @@
+# بيئة Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# بيئة التطوير
+venv/
+ENV/
+env/
+.venv
 .env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Streamlit
+.streamlit/cache/
+.streamlit/secrets.toml
+.streamlit/cache_version.txt
+
+# البيانات الحساسة
+victims.json
+exfiltrated_files/
+exfiltrated_log.json
+*.log
+
+# الملفات المؤقتة
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+
+# ملفات النظام
+.DS_Store
+Thumbs.db
+
+# ملفات Git
+.git/
+.gitignore
+
+# ملفات المشروع
+.project
+.pydevproject
+.settings/
+
+# ملفات الاختبار
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ملفات البناء
+dist/
+build/
+*.egg-info/
+
+# ملفات النشر
+*.whl
+*.tar.gz

