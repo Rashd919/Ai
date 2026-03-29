@@ -54,7 +54,7 @@ def send_telegram_alert(ip, trap_name, device="Unknown", file_name=""):
     try:
         response = requests.post(
             f"https://api.telegram.org/bot{token}/sendMessage",
-            data={"chat_id": chat_id, "text": message},
+            json={"chat_id": chat_id, "text": message, "parse_mode": "HTML"},
             timeout=10
         )
         return response.status_code == 200
@@ -178,8 +178,26 @@ def get_server_side_ip():
     return "Unknown"
 
 def get_geo_data(ip):
-    """الحصول على بيانات الموقع الجغرافي لعنوان IP"""
+    """الحصول على بيانات الموقع الجغرافي لعنوان IP باستخدام ipinfo.io"""
     geo_data = {"country": "Unknown", "city": "Unknown", "isp": "Unknown"}
+    
+    # محاولة الحصول على البيانات من ipinfo.io أولاً
+    try:
+        ipinfo_key = config.get_key("IPINFO_API_KEY")
+        if ipinfo_key:
+            headers = {"Authorization": f"Bearer {ipinfo_key}"}
+            res = requests.get(f"https://ipinfo.io/{ip}", headers=headers, timeout=5).json()
+            if res and "country" in res:
+                geo_data = {
+                    "country": res.get("country", "Unknown"),
+                    "city": res.get("city", "Unknown"),
+                    "isp": res.get("org", "Unknown").replace("AS", "").strip()
+                }
+                return geo_data
+    except Exception as e:
+        logger.debug(f"Error fetching from ipinfo.io: {e}")
+    
+    # احتياطي: استخدام ip-api.com
     try:
         res = requests.get(f"http://ip-api.com/json/{ip}", timeout=5).json()
         if res.get("status") == "success":

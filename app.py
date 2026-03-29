@@ -322,7 +322,6 @@ tab_names = [
     "📍 تحديد الموقع",
     "🏗️ سطح الهجوم",
     "🧠 تحليل ذكي",
-    "🤖 مساعد الهجوم",
     "🔎 Google Dork",
     "📧 Email OSINT",
     "📱 Phone Lookup",
@@ -331,7 +330,6 @@ tab_names = [
     "⚠️ Vulnerability Scanner",
     "🗺️ Network Mapper",
     "🤖 AI Threat Analysis",
-    "💡 AI Pentest Advisor",
     "📄 التقارير",
     "🎯 المصيدة"
 ]

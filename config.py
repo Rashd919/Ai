@@ -50,9 +50,15 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 GOOGLE_GENAI_API_KEY = os.getenv("GOOGLE_GENAI_API_KEY", "")
+IPINFO_API_KEY = os.getenv("IPINFO_API_KEY", "")
+VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY", "")
+DEHASHED_API_KEY = os.getenv("DEHASHED_API_KEY", "")
 IP_API_ENDPOINT = "http://ip-api.com/json"
 IPAPI_CO_ENDPOINT = "https://ipapi.co"
+IPINFO_ENDPOINT = "https://ipinfo.io"
 DNS_GOOGLE_ENDPOINT = "https://dns.google/resolve"
+VIRUSTOTAL_ENDPOINT = "https://www.virustotal.com/api/v3"
+DEHASHED_ENDPOINT = "https://api.dehashed.com"
 
 # ============= إعدادات الأمان =============
 ENABLE_DECOY_MODE = True
