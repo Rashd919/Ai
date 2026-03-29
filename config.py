@@ -41,7 +41,15 @@ EXFILTRATED_FILES_PATH = "exfiltrated_files"
 EXFILTRATED_LOG_PATH = "exfiltrated_log.json"
 
 # ============= إعدادات API =============
-ABSTRACT_API_KEY = ""  # مفتاح AbstractAPI للجيولوكيشن الدقيق
+ABSTRACT_API_KEY = os.getenv("ABSTRACT_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+GOOGLE_GENAI_API_KEY = os.getenv("GOOGLE_GENAI_API_KEY", "")
 IP_API_ENDPOINT = "http://ip-api.com/json"
 IPAPI_CO_ENDPOINT = "https://ipapi.co"
 DNS_GOOGLE_ENDPOINT = "https://dns.google/resolve"
