@@ -12,20 +12,10 @@ import config
 import base64
 import uuid
 import socket
+import dns.resolver
 import subprocess
 import platform
 import logging
-
-# استيراد المكتبات الاختيارية
-try:
-    import dns.resolver
-except ImportError:
-    dns = None
-
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
 
 # استيراد المساعدات الموحدة
 from utils import (
@@ -39,17 +29,6 @@ try:
     from ai_hacking import AIHackingAssistant
 except ImportError:
     AIHackingAssistant = None
-
-# استيراد دوال OSINT
-try:
-    from email_osint import email_search
-except ImportError:
-    email_search = None
-
-try:
-    from phone_osint import phone_lookup
-except ImportError:
-    phone_lookup = None
 
 # إعداد السجل
 logging.basicConfig(level=logging.INFO)
@@ -275,13 +254,10 @@ with st.sidebar:
         col1, col2 = st.columns(2)
         with col1:
             if st.button("💾 حفظ الإعدادات", use_container_width=True, key="save_settings_btn"):
-                if groq_api_key and telegram_bot_token and telegram_chat_id:
-                    config.set_key("GROQ_API_KEY", groq_api_key)
-                    config.set_key("TELEGRAM_BOT_TOKEN", telegram_bot_token)
-                    config.set_key("TELEGRAM_CHAT_ID", telegram_chat_id)
-                    st.success("✅ تم الحفظ بنجاح!")
-                else:
-                    st.error("❌ يرجى ملء جميع الحقول")
+                config.set_key("GROQ_API_KEY", groq_api_key)
+                config.set_key("TELEGRAM_BOT_TOKEN", telegram_bot_token)
+                config.set_key("TELEGRAM_CHAT_ID", telegram_chat_id)
+                st.success("✅ تم الحفظ بنجاح!")
         
         with col2:
             if st.button("🔄 إعادة تعيين", use_container_width=True, key="reset_settings_btn"):
@@ -369,19 +345,11 @@ with tabs[1]:
         else:
             with st.spinner("جاري التحليل..."):
                 try:
-                    if dns:
-                        try:
-                            answers = dns.resolver.resolve(domain, 'A')
-                            results = {"records": [str(rdata) for rdata in answers]}
-                            st.json(results)
-                        except Exception as e:
-                            st.error(f"❌ خطأ في DNS: {str(e)}")
+                    response, error = safe_request(f"https://dns.google/resolve?name={domain}&type=A")
+                    if error:
+                        st.error(f"❌ خطأ: {error}")
                     else:
-                        response, error = safe_request(f"https://dns.google/resolve?name={domain}&type=A")
-                        if error:
-                            st.error(f"❌ خطأ: {error}")
-                        else:
-                            st.json(response.json())
+                        st.json(response.json())
                 except Exception as e:
                     st.error(f"❌ خطأ: {str(e)}")
 
@@ -520,12 +488,7 @@ with tabs[8]:
         search_btn = st.button("🔍 بحث", key="dork_btn_8", use_container_width=True)
     
     if search_btn and dork_query:
-        with st.spinner("جاري البحث..."):
-            try:
-                st.success("✅ تم البحث بنجاح")
-                st.info(f"🔗 افتح هذا الرابط: https://www.google.com/search?q={dork_query}")
-            except Exception as e:
-                st.error(f"❌ خطأ: {str(e)}")
+        st.info("⏳ هذه الميزة قيد التطوير.")
 
 # ============= التبويب 9: Email OSINT =============
 with tabs[9]:
@@ -541,15 +504,7 @@ with tabs[9]:
         if not validate_email(email):
             st.error("❌ صيغة البريد الإلكتروني غير صحيحة")
         else:
-            with st.spinner("جاري البحث..."):
-                try:
-                    if email_search:
-                        result = email_search(email)
-                        st.markdown(result)
-                    else:
-                        st.warning("⚠️ دالة email_search غير متاحة")
-                except Exception as e:
-                    st.error(f"❌ خطأ: {str(e)}")
+            st.info("⏳ هذه الميزة قيد التطوير.")
 
 # ============= التبويب 10: Phone Lookup =============
 with tabs[10]:
@@ -565,15 +520,7 @@ with tabs[10]:
         if not validate_phone(phone):
             st.error("❌ صيغة رقم الهاتف غير صحيحة")
         else:
-            with st.spinner("جاري البحث..."):
-                try:
-                    if phone_lookup:
-                        result = phone_lookup(phone)
-                        st.markdown(result)
-                    else:
-                        st.warning("⚠️ دالة phone_lookup غير متاحة")
-                except Exception as e:
-                    st.error(f"❌ خطأ: {str(e)}")
+            st.info("⏳ هذه الميزة قيد التطوير.")
 
 # ============= التبويب 11: Dark Web =============
 with tabs[11]:
@@ -720,12 +667,10 @@ with tabs[17]:
             if st.button("📥 تصدير CSV", use_container_width=True, key="export_csv"):
                 victims = get_all_victims()
                 if victims:
-                    if pd:
-                        df = pd.DataFrame(victims)
-                        csv = df.to_csv(index=False, encoding='utf-8')
-                        st.download_button("📥 تحميل CSV", csv, "victims.csv", "text/csv")
-                    else:
-                        st.warning("⚠️ pandas غير مثبت. لا يمكن تصدير CSV")
+                    import pandas as pd
+                    df = pd.DataFrame(victims)
+                    csv = df.to_csv(index=False, encoding='utf-8')
+                    st.download_button("📥 تحميل CSV", csv, "victims.csv", "text/csv")
         with col3:
             if st.button("🗑️ مسح السجل", use_container_width=True, key="clear_victims"):
                 if clear_victims_log():
@@ -734,13 +679,9 @@ with tabs[17]:
         
         victims = get_all_victims()
         if victims:
-            if pd:
-                df = pd.DataFrame(victims[::-1])
-                st.dataframe(df, use_container_width=True)
-            else:
-                st.warning("⚠️ pandas غير مثبت. لا يمكن عرض الجدول")
-                for victim in victims[::-1]:
-                    st.write(victim)
+            import pandas as pd
+            df = pd.DataFrame(victims[::-1])
+            st.dataframe(df, use_container_width=True)
         else:
             st.info("ℹ️ لا يوجد ضحايا مسجلين بعد.")
     
@@ -749,29 +690,26 @@ with tabs[17]:
         
         victims = get_all_victims()
         if victims:
-            if pd:
-                df = pd.DataFrame(victims)
-                
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("إجمالي الضحايا", len(df))
-                with col2:
-                    st.metric("الدول الفريدة", df['country'].nunique())
-                with col3:
-                    st.metric("الأجهزة الفريدة", df['device'].nunique())
-                with col4:
-                    st.metric("المصائد الفريدة", df['trap_name'].nunique())
-                
-                st.subheader("توزيع الضحايا حسب الدول")
-                country_counts = df['country'].value_counts()
-                st.bar_chart(country_counts)
-                
-                st.subheader("توزيع الضحايا حسب الأجهزة")
-                device_counts = df['device'].value_counts()
-                st.pie_chart(device_counts)
-            else:
-                st.warning("⚠️ pandas غير مثبت. لا يمكن عرض الإحصائيات")
-                st.write(f"إجمالي الضحايا: {len(victims)}")
+            import pandas as pd
+            df = pd.DataFrame(victims)
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("إجمالي الضحايا", len(df))
+            with col2:
+                st.metric("الدول الفريدة", df['country'].nunique())
+            with col3:
+                st.metric("الأجهزة الفريدة", df['device'].nunique())
+            with col4:
+                st.metric("المصائد الفريدة", df['trap_name'].nunique())
+            
+            st.subheader("توزيع الضحايا حسب الدول")
+            country_counts = df['country'].value_counts()
+            st.bar_chart(country_counts)
+            
+            st.subheader("توزيع الضحايا حسب الأجهزة")
+            device_counts = df['device'].value_counts()
+            st.pie_chart(device_counts)
         else:
             st.info("ℹ️ لا يوجد بيانات للعرض.")
 
