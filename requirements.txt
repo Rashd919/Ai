@@ -11,7 +11,7 @@ supabase
 dnspython
 Pillow
 validators
-numpy=
+numpy
 matplotlib
 networkx
 PyGithub
