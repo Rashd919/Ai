@@ -28,3 +28,4 @@ networkx
 Pillow
 dnspython
 nest-asyncio
+truecallerpy

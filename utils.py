@@ -292,3 +292,107 @@ def format_table(data):
         import pandas as pd
         return pd.DataFrame(data)
     return data
+
+# ============= دوال Phone Intelligence =============
+
+def search_phone_truecaller(phone_number, installation_id=""):
+    """البحث عن معلومات الهاتف باستخدام Truecaller API"""
+    try:
+        from truecallerpy import search_phonenumber
+        
+        installation_id = installation_id or config.get_key("TRUECALLER_INSTALLATION_ID")
+        
+        if not installation_id:
+            return {
+                "success": False,
+                "error": "لم يتم توفير Truecaller Installation ID",
+                "data": None
+            }
+        
+        # البحث عن الرقم
+        result = search_phonenumber(phone_number, installation_id)
+        
+        if result:
+            return {
+                "success": True,
+                "data": {
+                    "name": result.get("name", "Unknown"),
+                    "phone": result.get("phoneNumber", phone_number),
+                    "email": result.get("email", "Not Found"),
+                    "image": result.get("image", ""),
+                    "company": result.get("company", "Not Found"),
+                    "type": result.get("type", "Unknown"),
+                    "badge": result.get("badge", {})
+                }
+            }
+        else:
+            return {
+                "success": False,
+                "error": "لم يتم العثور على معلومات عن هذا الرقم",
+                "data": None
+            }
+    
+    except Exception as e:
+        logger.error(f"Error searching phone number: {e}")
+        return {
+            "success": False,
+            "error": f"خطأ في البحث: {str(e)}",
+            "data": None
+        }
+
+def search_phone_with_google_dork(name, phone=""):
+    """البحث عن معلومات إضافية باستخدام Google Dorking"""
+    try:
+        from ddgs import DDGS
+        
+        ddgs = DDGS()
+        
+        # بناء استعلام Google Dork
+        query = f'"{name}"'
+        if phone:
+            query += f' "{phone}"'
+        
+        query += ' (email OR contact OR profile OR linkedin OR twitter OR facebook)'
+        
+        results = ddgs.text(query, max_results=5)
+        
+        return {
+            "success": True,
+            "results": results
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in Google Dork search: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "results": []
+        }
+
+def get_phone_intelligence(phone_number):
+    """الحصول على معلومات ذكية عن الهاتف من مصادر متعددة"""
+    try:
+        installation_id = config.get_key("TRUECALLER_INSTALLATION_ID")
+        
+        # البحث الأساسي عبر Truecaller
+        truecaller_data = search_phone_truecaller(phone_number, installation_id)
+        
+        additional_info = {
+            "truecaller": truecaller_data,
+            "google_dork": {}
+        }
+        
+        # إذا وجدنا اسماً، نقوم بـ Google Dorking
+        if truecaller_data["success"] and truecaller_data["data"]:
+            name = truecaller_data["data"].get("name", "")
+            if name:
+                additional_info["google_dork"] = search_phone_with_google_dork(name, phone_number)
+        
+        return additional_info
+    
+    except Exception as e:
+        logger.error(f"Error getting phone intelligence: {e}")
+        return {
+            "truecaller": {"success": False, "error": str(e)},
+            "google_dork": {"success": False, "error": str(e)}
+        }
