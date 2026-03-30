@@ -605,9 +605,9 @@ with tabs[10]:
     
     col1, col2 = st.columns([3, 1])
     with col1:
-        phone = st.text_input("أدخل رقم الهاتف", placeholder="+966501234567", key="phone_input")
+        phone = st.text_input("أدخل رقم الهاتف", placeholder="+966501234567", key="phone_lookup_input_v1")
     with col2:
-        search_btn = st.button("🔍 بحث", key="phone_btn_10", width='stretch')
+        search_btn = st.button("🔍 بحث", key="phone_lookup_btn_v1", width='stretch')
     
     if search_btn and phone:
         if not validate_phone(phone):
@@ -830,9 +830,9 @@ with tabs[16]:
     
     col1, col2 = st.columns([3, 1])
     with col1:
-        phone = st.text_input("أدخل رقم الهاتف", placeholder="+966501234567", key="phone_input")
+        phone = st.text_input("أدخل رقم الهاتف", placeholder="+966501234567", key="phone_lookup_input_v1")
     with col2:
-        search_btn = st.button("🔍 بحث", key="phone_btn", width='stretch')
+        search_btn = st.button("🔍 بحث", key="phone_intelligence_btn_v1", width='stretch')
     
     if search_btn and phone:
         with st.spinner("جاري البحث..."):

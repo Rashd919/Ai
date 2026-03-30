@@ -296,47 +296,98 @@ def format_table(data):
 # ============= دوال Phone Intelligence =============
 
 def search_phone_truecaller(phone_number, installation_id=""):
-    """البحث عن معلومات الهاتف باستخدام Truecaller API"""
+    """البحث عن معلومات الهاتف باستخدام Truecaller API مع معالجة أخطاء شاملة"""
     try:
+        import streamlit as st
         from truecallerpy import search_phonenumber
         
-        installation_id = installation_id or config.get_key("TRUECALLER_INSTALLATION_ID")
+        # قراءة المفتاح من st.secrets بشكل آمن
+        try:
+            installation_id = installation_id or st.secrets.get("TRUECALLER_INSTALLATION_ID", "")
+        except:
+            installation_id = installation_id or config.get_key("TRUECALLER_INSTALLATION_ID")
         
         if not installation_id:
             return {
                 "success": False,
-                "error": "لم يتم توفير Truecaller Installation ID",
+                "error": "لم يتم توفير Truecaller Installation ID. يرجى إضافته في Streamlit Secrets.",
                 "data": None
             }
         
-        # البحث عن الرقم
-        result = search_phonenumber(phone_number, installation_id)
-        
-        if result:
-            return {
-                "success": True,
-                "data": {
-                    "name": result.get("name", "Unknown"),
-                    "phone": result.get("phoneNumber", phone_number),
-                    "email": result.get("email", "Not Found"),
-                    "image": result.get("image", ""),
-                    "company": result.get("company", "Not Found"),
-                    "type": result.get("type", "Unknown"),
-                    "badge": result.get("badge", {})
-                }
-            }
-        else:
+        # التحقق من صيغة الرقم
+        if not phone_number or len(phone_number) < 7:
             return {
                 "success": False,
-                "error": "لم يتم العثور على معلومات عن هذا الرقم",
+                "error": "صيغة رقم الهاتف غير صحيحة. يجب أن يكون 7 أرقام على الأقل.",
                 "data": None
             }
+        
+        # البحث عن الرقم مع معالجة الأخطاء
+        try:
+            result = search_phonenumber(phone_number, installation_id)
+            
+            if result:
+                return {
+                    "success": True,
+                    "data": {
+                        "name": result.get("name", "Unknown"),
+                        "phone": result.get("phoneNumber", phone_number),
+                        "email": result.get("email", "Not Found"),
+                        "image": result.get("image", ""),
+                        "company": result.get("company", "Not Found"),
+                        "type": result.get("type", "Unknown"),
+                        "badge": result.get("badge", {})
+                    }
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "لم يتم العثور على معلومات عن هذا الرقم في قاعدة بيانات Truecaller.",
+                    "data": None
+                }
+        
+        except Exception as search_error:
+            error_str = str(search_error).lower()
+            
+            # معالجة أخطاء محددة
+            if "rate limit" in error_str or "429" in error_str:
+                return {
+                    "success": False,
+                    "error": "⚠️ تم تجاوز حد الطلبات. يرجى المحاولة لاحقاً.",
+                    "data": None
+                }
+            elif "unauthorized" in error_str or "401" in error_str:
+                return {
+                    "success": False,
+                    "error": "❌ خطأ في المصادقة. تحقق من صحة Installation ID.",
+                    "data": None
+                }
+            elif "network" in error_str or "timeout" in error_str:
+                return {
+                    "success": False,
+                    "error": "🌐 خطأ في الاتصال. تحقق من اتصالك بالإنترنت.",
+                    "data": None
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"❌ خطأ في البحث: {sanitize_text(str(search_error))}",
+                    "data": None
+                }
     
-    except Exception as e:
-        logger.error(f"Error searching phone number: {e}")
+    except ImportError:
+        logger.error("truecallerpy library not installed")
         return {
             "success": False,
-            "error": f"خطأ في البحث: {str(e)}",
+            "error": "❌ مكتبة Truecaller غير مثبتة. يرجى تثبيتها أولاً.",
+            "data": None
+        }
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in search_phone_truecaller: {e}")
+        return {
+            "success": False,
+            "error": f"❌ خطأ غير متوقع: {sanitize_text(str(e))}",
             "data": None
         }
 
