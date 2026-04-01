@@ -825,52 +825,70 @@ with tabs[16]:
 
 # ============= التبويب 16: Phone Intelligence =============
 with tabs[16]:
-    st.header("📱 Phone Intelligence")
-    st.write("بحث عن معلومات الهاتف باستخدام Truecaller و Google Dorking")
+    st.header("📱 Phone Intelligence - البحث الهجين المتقدم")
+    st.write("🔍 بحث شامل عن معلومات الهاتف: الهوية + الحسابات الاجتماعية + تسريبات البيانات")
     
     col1, col2 = st.columns([3, 1])
     with col1:
-        phone = st.text_input("أدخل رقم الهاتف", placeholder="+966501234567", key="phone_lookup_input_v1")
+        phone = st.text_input("أدخل رقم الهاتف", placeholder="+962775866283", key="phone_intelligence_hybrid_input_v1")
     with col2:
-        search_btn = st.button("🔍 بحث", key="phone_intelligence_btn_v1", width='stretch')
+        search_btn = st.button("🔍 بحث شامل", key="phone_intelligence_hybrid_btn_v1", width='stretch')
     
     if search_btn and phone:
-        with st.spinner("جاري البحث..."):
+        with st.spinner("⏳ جاري البحث الهجين المتقدم..."):
             try:
-                from utils import get_phone_intelligence
+                from utils import search_phone_hybrid
+                hybrid_result = search_phone_hybrid(phone)
                 
-                result = get_phone_intelligence(phone)
-                
-                # عرض نتائج Truecaller
-                if result["truecaller"]["success"]:
-                    data = result["truecaller"]["data"]
+                if hybrid_result.get("success"):
+                    data = hybrid_result.get("data", {})
+                    st.success(f"✅ {data.get('summary', 'تم إجراء البحث')}")
                     
-                    st.success("✅ تم العثور على معلومات!")
+                    tab_identity, tab_social, tab_leaks = st.tabs(["👤 الهوية", "📱 الحسابات الاجتماعية", "⚠️ التسريبات"])
                     
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.subheader("📄 المعلومات الأساسية")
-                        st.write(f"**الاسم:** {data.get('name', 'Unknown')}")
-                        st.write(f"**الهاتف:** {data.get('phone', phone)}")
-                        st.write(f"**البريد:** {data.get('email', 'Not Found')}")
-                        st.write(f"**الشركة:** {data.get('company', 'Not Found')}")
-                    
-                    with col2:
-                        st.subheader("📸 الصورة")
-                        if data.get('image'):
-                            st.image(data['image'], width=200)
+                    with tab_identity:
+                        st.subheader("معلومات الهوية")
+                        identity_data = data.get("identity", {})
+                        if identity_data:
+                            for query, info in identity_data.items():
+                                st.write(f"**{query}:**")
+                                st.write(f"العنوان: {info.get('title', 'N/A')}")
+                                st.write(f"الوصف: {info.get('body', 'N/A')}")
+                                st.divider()
                         else:
-                            st.info("لا توجد صورة متاحة")
+                            st.info("لم يتم العثور على معلومات")
                     
-                    # عرض نتائج Google Dorking
-                    if result["google_dork"]["success"]:
-                        st.subheader("🔎 نتائج Google Dorking")
-                        for i, res in enumerate(result["google_dork"]["results"], 1):
-                            st.write(f"{i}. {res.get('title', 'No title')}")
-                            st.write(f"   {res.get('href', 'No URL')}")
+                    with tab_social:
+                        st.subheader("الحسابات الاجتماعية")
+                        social_accounts = data.get("social_accounts", [])
+                        if social_accounts:
+                            for account in social_accounts:
+                                st.write(f"📱 {account.get('platform', 'Unknown').upper()}")
+                                if account.get('url'):
+                                    st.write(f"[الرابط]({account.get('url')})")
+                        else:
+                            st.info("لم يتم العثور على حسابات")
+                    
+                    with tab_leaks:
+                        st.subheader("تسريبات البيانات")
+                        leaks = data.get("leaks", {})
+                        dehashed = leaks.get("dehashed", [])
+                        tavily = leaks.get("tavily", [])
+                        
+                        if dehashed:
+                            st.warning(f"⚠️ {len(dehashed)} تسريب في DeHashed")
+                            for i, leak in enumerate(dehashed, 1):
+                                with st.expander(f"التسريب #{i}"):
+                                    st.write(f"البريد: {leak.get('email', 'N/A')}")
+                                    st.write(f"المستخدم: {leak.get('username', 'N/A')}")
+                        
+                        if tavily:
+                            st.info(f"ℹ️ {len(tavily)} نتيجة في Tavily")
+                        
+                        if not dehashed and not tavily:
+                            st.success("✅ لم يتم العثور على تسريبات")
                 else:
-                    st.error(f"❌ {result['truecaller'].get('error', 'خطأ غير معروف')}")
-            
+                    st.error(f"❌ {hybrid_result.get('error', 'خطأ')}")
             except Exception as e:
                 st.error(f"❌ خطأ: {str(e)}")
 

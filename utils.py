@@ -447,3 +447,197 @@ def get_phone_intelligence(phone_number):
             "truecaller": {"success": False, "error": str(e)},
             "google_dork": {"success": False, "error": str(e)}
         }
+
+
+# ============= دوال البحث عن تسريبات البيانات (Data Leaks) =============
+
+def search_data_leaks_phone(phone_number):
+    """البحث عن تسريبات البيانات المرتبطة برقم الهاتف عبر DeHashed و Tavily"""
+    try:
+        import streamlit as st
+        
+        dehashed_key = None
+        tavily_key = None
+        
+        # محاولة قراءة المفاتيح من st.secrets
+        try:
+            dehashed_key = st.secrets.get("DEHASHED_API_KEY", "")
+            tavily_key = st.secrets.get("TAVILY_API_KEY", "")
+        except:
+            dehashed_key = config.get_key("DEHASHED_API_KEY")
+            tavily_key = config.get_key("TAVILY_API_KEY")
+        
+        leaks_results = {
+            "dehashed": [],
+            "tavily": [],
+            "summary": ""
+        }
+        
+        # البحث عبر DeHashed (إذا كان المفتاح متوفراً)
+        if dehashed_key:
+            try:
+                headers = {
+                    "Authorization": f"Bearer {dehashed_key}",
+                    "User-Agent": "Rashd_Ai/1.0"
+                }
+                
+                # البحث عن الرقم في DeHashed
+                response = requests.get(
+                    f"https://api.dehashed.com/search?query={phone_number}",
+                    headers=headers,
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("entries"):
+                        for entry in data.get("entries", [])[:5]:  # أول 5 نتائج فقط
+                            leaks_results["dehashed"].append({
+                                "email": entry.get("email", "N/A"),
+                                "username": entry.get("username", "N/A"),
+                                "password": entry.get("password", "***"),
+                                "hashed_password": entry.get("hashed_password", "N/A"),
+                                "name": entry.get("name", "N/A"),
+                                "database": entry.get("database_name", "Unknown")
+                            })
+                
+            except Exception as e:
+                logger.error(f"Error searching DeHashed: {e}")
+        
+        # البحث عبر Tavily (للمعلومات العامة والتسريبات المعروفة)
+        if tavily_key:
+            try:
+                response = requests.post(
+                    "https://api.tavily.com/search",
+                    json={
+                        "api_key": tavily_key,
+                        "query": f"{phone_number} leaked data breach",
+                        "include_answer": True,
+                        "max_results": 5
+                    },
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    for result in data.get("results", []):
+                        leaks_results["tavily"].append({
+                            "title": result.get("title", ""),
+                            "url": result.get("url", ""),
+                            "snippet": result.get("snippet", "")[:200]  # أول 200 حرف فقط
+                        })
+                
+            except Exception as e:
+                logger.error(f"Error searching Tavily for leaks: {e}")
+        
+        # إنشاء ملخص النتائج
+        dehashed_count = len(leaks_results["dehashed"])
+        tavily_count = len(leaks_results["tavily"])
+        
+        if dehashed_count > 0 or tavily_count > 0:
+            leaks_results["summary"] = f"⚠️ تم العثور على {dehashed_count} تسريب في DeHashed و {tavily_count} نتيجة في Tavily"
+        else:
+            leaks_results["summary"] = "✅ لم يتم العثور على تسريبات معروفة"
+        
+        return {
+            "success": True,
+            "data": leaks_results
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in search_data_leaks_phone: {e}")
+        return {
+            "success": False,
+            "error": f"خطأ في البحث عن التسريبات: {sanitize_text(str(e))}",
+            "data": None
+        }
+
+
+def search_phone_hybrid(phone_number):
+    """البحث الهجين المتقدم عن معلومات الهاتف (الاسم + الحسابات الاجتماعية + التسريبات)"""
+    try:
+        import streamlit as st
+        from duckduckgo_search import DDGS
+        
+        hybrid_results = {
+            "phone": phone_number,
+            "identity": {},
+            "social_accounts": [],
+            "leaks": {},
+            "summary": ""
+        }
+        
+        # 1. البحث عن الهوية عبر Google Dorking و DuckDuckGo
+        try:
+            ddgs = DDGS()
+            
+            # البحث عن الرقم مع الاسم
+            search_queries = [
+                f'"{phone_number}" name',
+                f'"{phone_number}" owner',
+                f'"{phone_number}" person',
+            ]
+            
+            for query in search_queries:
+                try:
+                    results = ddgs.text(query, max_results=3)
+                    for result in results:
+                        hybrid_results["identity"][query] = {
+                            "title": result.get("title", ""),
+                            "body": result.get("body", "")[:150]
+                        }
+                except:
+                    pass
+        
+        except Exception as e:
+            logger.error(f"Error in identity search: {e}")
+        
+        # 2. البحث عن الحسابات الاجتماعية
+        try:
+            social_platforms = ["facebook", "twitter", "linkedin", "instagram", "whatsapp"]
+            
+            for platform in social_platforms:
+                try:
+                    ddgs = DDGS()
+                    results = ddgs.text(f'"{phone_number}" site:{platform}.com', max_results=1)
+                    
+                    if results:
+                        hybrid_results["social_accounts"].append({
+                            "platform": platform,
+                            "found": True,
+                            "url": results[0].get("href", "")
+                        })
+                except:
+                    pass
+        
+        except Exception as e:
+            logger.error(f"Error in social search: {e}")
+        
+        # 3. البحث عن التسريبات
+        try:
+            leaks_data = search_data_leaks_phone(phone_number)
+            if leaks_data.get("success"):
+                hybrid_results["leaks"] = leaks_data.get("data", {})
+        
+        except Exception as e:
+            logger.error(f"Error in leaks search: {e}")
+        
+        # إنشاء ملخص شامل
+        identity_count = len(hybrid_results["identity"])
+        social_count = len(hybrid_results["social_accounts"])
+        leaks_count = len(hybrid_results["leaks"].get("dehashed", [])) + len(hybrid_results["leaks"].get("tavily", []))
+        
+        hybrid_results["summary"] = f"📊 النتائج: {identity_count} هوية + {social_count} حساب اجتماعي + {leaks_count} تسريب"
+        
+        return {
+            "success": True,
+            "data": hybrid_results
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in search_phone_hybrid: {e}")
+        return {
+            "success": False,
+            "error": f"خطأ في البحث الهجين: {sanitize_text(str(e))}",
+            "data": None
+        }
